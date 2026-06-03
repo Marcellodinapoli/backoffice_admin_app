@@ -1,0 +1,21 @@
+# BackOffice Admin App — Flutter Web su Netlify
+#
+# Netlify UI → Site configuration → Build & deploy:
+#   Repository: Marcellodinapoli/backoffice_admin_app
+#   Branch: main
+#   Build command: (vuoto — usa questo file)
+#   Publish directory: build/web
+
+[build]
+  command = "bash scripts/netlify_build.sh"
+  publish = "build/web"
+
+[build.environment]
+  FLUTTER_CHANNEL = "stable"
+  CI = "true"
+  NETLIFY_SKIP_DEPENDENCIES_INSTALL = "true"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
 
-import '../backoffice_web_pages/bk_dashboard_page.dart';
-import '../backoffice_web_pages/bk_users_page.dart' as users;
-import '../backoffice_web_pages/bk_courses_page.dart' as courses;
-
 class AdminDrawer extends StatelessWidget {
-  final Function(Widget) onSelect;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
 
   const AdminDrawer({
     super.key,
+    required this.selectedIndex,
     required this.onSelect,
   });
+
+  static const _titles = [
+    'Dashboard',
+    'Utenti',
+    'Aziende',
+    'Popup',
+    'Impostazioni',
+    'CreditJob',
+    'Costi',
+    'Community',
+    'Assistenza',
+    'Sicurezza',
+  ];
+
+  static const _icons = [
+    Icons.dashboard_outlined,
+    Icons.people_outline,
+    Icons.business_outlined,
+    Icons.campaign_outlined,
+    Icons.settings_outlined,
+    Icons.work_outline,
+    Icons.euro_outlined,
+    Icons.forum_outlined,
+    Icons.support_agent_outlined,
+    Icons.security_outlined,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -18,15 +42,13 @@ class AdminDrawer extends StatelessWidget {
       child: Column(
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Color(0xFF1B263B),
-            ),
+            decoration: BoxDecoration(color: Color(0xFF1565C0)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "BackOffice Admin",
+                  'BackOffice Admin',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -35,57 +57,42 @@ class AdminDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  "Pannello di controllo",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  'Pannello mobile',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
           ),
-
-          _buildItem(
-            context,
-            icon: Icons.dashboard_outlined,
-            title: "Dashboard",
-            page: const BkDashboardPage(),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _titles.length,
+              itemBuilder: (context, index) {
+                final selected = index == selectedIndex;
+                return ListTile(
+                  leading: Icon(
+                    _icons[index],
+                    color: selected
+                        ? const Color(0xFF1565C0)
+                        : Colors.grey[700],
+                  ),
+                  title: Text(
+                    _titles[index],
+                    style: TextStyle(
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.w400,
+                      color: selected
+                          ? const Color(0xFF1565C0)
+                          : Colors.black87,
+                    ),
+                  ),
+                  selected: selected,
+                  onTap: () => onSelect(index),
+                );
+              },
+            ),
           ),
-
-          _buildItem(
-            context,
-            icon: Icons.people_outline,
-            title: "Utenti",
-            page: users.BkUsersPage(),
-          ),
-
-          _buildItem(
-            context,
-            icon: Icons.school_outlined,
-            title: "Corsi",
-            page: courses.BkCoursesPage(),
-          ),
-
-          const Divider(),
-          const Spacer(),
         ],
       ),
-    );
-  }
-
-  Widget _buildItem(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required Widget page,
-      }) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white70),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white),
-      ),
-      onTap: () => onSelect(page),
     );
   }
 }

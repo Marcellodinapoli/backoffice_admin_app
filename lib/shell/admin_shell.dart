@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 
-import 'admin_drawer.dart';
-import '../services/auth_service.dart';
 import '../auth/admin_login_page.dart';
+import '../backoffice_web_pages/bk_announcements_page.dart';
+import '../backoffice_web_pages/bk_community_page.dart';
+import '../backoffice_web_pages/bk_companies_page.dart';
+import '../backoffice_web_pages/bk_costs_page.dart';
 import '../backoffice_web_pages/bk_dashboard_page.dart';
+import '../backoffice_web_pages/bk_jobs_page.dart';
+import '../backoffice_web_pages/bk_security_page.dart';
+import '../backoffice_web_pages/bk_settings_page.dart';
+import '../backoffice_web_pages/bk_support_page.dart';
 import '../backoffice_web_pages/bk_users_page.dart';
-import '../backoffice_web_pages/bk_courses_page.dart';
+import '../services/auth_service.dart';
+import 'admin_drawer.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -15,13 +22,26 @@ class AdminShell extends StatefulWidget {
 }
 
 class _AdminShellState extends State<AdminShell> {
-  Widget _currentPage = BkDashboardPage(); // ← tolto const
+  int _index = 0;
   final AuthService _authService = AuthService();
 
-  void _navigate(Widget page) {
-    setState(() {
-      _currentPage = page;
-    });
+  static const _titles = AdminDrawer._titles;
+
+  final List<Widget> _pages = const [
+    BkDashboardPage(),
+    BkUsersPage(),
+    BkCompaniesPage(),
+    BkAnnouncementsPage(),
+    BkSettingsPage(),
+    BkJobsPage(),
+    BkCostsPage(),
+    BkCommunityPage(),
+    BkSupportPage(),
+    BkSecurityPage(),
+  ];
+
+  void _navigate(int index) {
+    setState(() => _index = index);
     Navigator.pop(context);
   }
 
@@ -32,15 +52,19 @@ class _AdminShellState extends State<AdminShell> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-          (route) => false,
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final safeIndex = _index.clamp(0, _pages.length - 1);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("BackOffice Admin"),
+        backgroundColor: const Color(0xFF1565C0),
+        foregroundColor: Colors.white,
+        title: Text(_titles[safeIndex]),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -48,10 +72,13 @@ class _AdminShellState extends State<AdminShell> {
           ),
         ],
       ),
-      drawer: AdminDrawer(onSelect: _navigate),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _currentPage,
+      drawer: AdminDrawer(
+        selectedIndex: safeIndex,
+        onSelect: _navigate,
+      ),
+      body: IndexedStack(
+        index: safeIndex,
+        children: _pages,
       ),
     );
   }
