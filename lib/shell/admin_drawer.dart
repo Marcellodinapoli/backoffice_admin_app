@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_colors.dart';
+
 class AdminDrawer extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
@@ -10,30 +12,20 @@ class AdminDrawer extends StatelessWidget {
     required this.onSelect,
   });
 
-  static const _titles = [
+  static const titles = [
     'Dashboard',
     'Utenti',
-    'Aziende',
     'Popup',
-    'Impostazioni',
     'CreditJob',
-    'Costi',
-    'Community',
-    'Assistenza',
-    'Sicurezza',
+    'Impostazioni',
   ];
 
   static const _icons = [
     Icons.dashboard_outlined,
     Icons.people_outline,
-    Icons.business_outlined,
     Icons.campaign_outlined,
-    Icons.settings_outlined,
     Icons.work_outline,
-    Icons.euro_outlined,
-    Icons.forum_outlined,
-    Icons.support_agent_outlined,
-    Icons.security_outlined,
+    Icons.settings_outlined,
   ];
 
   @override
@@ -41,13 +33,22 @@ class AdminDrawer extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFF1565C0)),
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.headerGradientStart,
+                  AppColors.headerGradientEnd,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   'BackOffice Admin',
                   style: TextStyle(
                     color: Colors.white,
@@ -56,7 +57,7 @@ class AdminDrawer extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 6),
-                Text(
+                const Text(
                   'Pannello mobile',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
@@ -65,28 +66,28 @@ class AdminDrawer extends StatelessWidget {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: _titles.length,
+              itemCount: titles.length,
               itemBuilder: (context, index) {
                 final selected = index == selectedIndex;
                 return ListTile(
                   leading: Icon(
                     _icons[index],
-                    color: selected
-                        ? const Color(0xFF1565C0)
-                        : Colors.grey[700],
+                    color: selected ? AppColors.primary : AppColors.textSecondary,
                   ),
                   title: Text(
-                    _titles[index],
+                    titles[index],
                     style: TextStyle(
                       fontWeight:
                           selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected
-                          ? const Color(0xFF1565C0)
-                          : Colors.black87,
+                      color:
+                          selected ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
                   selected: selected,
-                  onTap: () => onSelect(index),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onSelect(index);
+                  },
                 );
               },
             ),
