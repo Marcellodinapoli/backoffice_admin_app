@@ -47,9 +47,22 @@ class MaintenanceSettings {
     if (data == null) {
       return const MaintenanceSettings(enabled: false, section: 'Tutto');
     }
+
+    final enabledRaw = data['enabled'];
+    var enabled = false;
+    if (enabledRaw is bool) {
+      enabled = enabledRaw;
+    } else if (enabledRaw is num) {
+      enabled = enabledRaw != 0;
+    } else if (enabledRaw is String) {
+      final normalized = enabledRaw.trim().toLowerCase();
+      enabled = normalized == 'true' || normalized == '1';
+    }
+
+    final section = data['section']?.toString().trim();
     return MaintenanceSettings(
-      enabled: data['enabled'] as bool? ?? false,
-      section: data['section']?.toString() ?? 'Tutto',
+      enabled: enabled,
+      section: (section == null || section.isEmpty) ? 'Tutto' : section,
     );
   }
 }

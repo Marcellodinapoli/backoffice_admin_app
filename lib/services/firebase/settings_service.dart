@@ -17,6 +17,13 @@ class SettingsService {
     return MaintenanceSettings.fromMap(doc.data());
   }
 
+  Stream<MaintenanceSettings> watchMaintenance() {
+    return _fs
+        .doc(FirestoreCollections.settings, FirestoreCollections.maintenanceDoc)
+        .snapshots()
+        .map((doc) => MaintenanceSettings.fromMap(doc.data()));
+  }
+
   Future<void> saveMaintenance({
     required bool enabled,
     required String section,
