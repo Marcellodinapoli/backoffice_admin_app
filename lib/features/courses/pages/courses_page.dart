@@ -6,6 +6,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/section_header.dart';
+import '../pages/course_detail_page.dart';
 import '../widgets/course_card.dart';
 
 class CoursesPage extends StatefulWidget {
@@ -90,7 +91,20 @@ class _CourseList extends StatelessWidget {
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           itemCount: courses.length,
-          itemBuilder: (_, i) => CourseCard(course: courses[i]),
+          itemBuilder: (_, i) {
+            final course = courses[i];
+            return CourseCard(
+              course: course,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CourseDetailPage(courseId: course.id),
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );

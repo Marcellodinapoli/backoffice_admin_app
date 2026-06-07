@@ -15,16 +15,32 @@ class AdminDrawer extends StatelessWidget {
   static const titles = [
     'Dashboard',
     'Utenti',
+    'Aziende',
+    'Corsi',
     'Popup',
     'CreditJob',
+    'Role Play',
+    'Statistiche',
+    'Community',
+    'Assistenza',
+    'Costi',
+    'Sicurezza',
     'Impostazioni',
   ];
 
   static const _icons = [
     Icons.dashboard_outlined,
     Icons.people_outline,
+    Icons.business_outlined,
+    Icons.menu_book_outlined,
     Icons.campaign_outlined,
     Icons.work_outline,
+    Icons.record_voice_over_outlined,
+    Icons.bar_chart_outlined,
+    Icons.forum_outlined,
+    Icons.support_agent_outlined,
+    Icons.euro_outlined,
+    Icons.security_outlined,
     Icons.settings_outlined,
   ];
 

@@ -19,10 +19,13 @@ class JobsService {
   Stream<QuerySnapshot<Map<String, dynamic>>> watchCompanyJobs(
     String companyId,
   ) {
-    return _jobs
-        .where('companyId', isEqualTo: companyId)
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+    // Filtra per companyId; l'ordinamento avviene lato client per evitare
+    // un indice composito Firestore (companyId + createdAt).
+    return _jobs.where('companyId', isEqualTo: companyId).snapshots();
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchJob(String jobId) {
+    return _jobs.doc(jobId).snapshots();
   }
 
   Future<void> approveJob(String jobId) async {

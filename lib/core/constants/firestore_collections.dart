@@ -6,6 +6,7 @@ abstract final class FirestoreCollections {
   static const quiz = 'quiz';
   static const roleplay = 'roleplay';
   static const announcements = 'announcements';
+  static const seenAnnouncements = 'seen_announcements';
   static const settings = 'settings';
   static const jobOffers = 'job_offers';
   static const jobApplications = 'job_applications';

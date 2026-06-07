@@ -8,9 +8,13 @@ import 'utils/bk_local_storage_mobile.dart' as storage;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
   await storage.bkLocalStorageInit();
 
   runApp(const BackOfficeAdminApp());

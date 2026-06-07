@@ -34,10 +34,16 @@ class Announcement {
       target: data['target']?.toString() ?? 'all',
       type: data['type']?.toString() ?? 'avviso',
       active: data['active'] as bool? ?? true,
-      targetCount: data['targetCount'] as int? ?? 0,
-      seenCount: data['seenCount'] as int? ?? 0,
+      targetCount: _readInt(data['targetCount']),
+      seenCount: _readInt(data['seenCount']),
       createdAt: data['createdAt'] as Timestamp?,
       expiresAt: data['expiresAt'] as Timestamp?,
     );
+  }
+
+  static int _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

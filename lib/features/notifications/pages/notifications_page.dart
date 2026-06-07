@@ -6,122 +6,22 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/section_header.dart';
+import 'announcement_form_page.dart';
 import '../widgets/announcement_card.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
-  Future<void> _showForm(
+  Future<void> _openForm(
     BuildContext context, {
     Announcement? existing,
   }) async {
-    final titleCtrl = TextEditingController(text: existing?.title ?? '');
-    final msgCtrl = TextEditingController(text: existing?.message ?? '');
-    var target = existing?.target ?? 'all';
-    var type = existing?.type ?? 'avviso';
-    var active = existing?.active ?? true;
-
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-        ),
-        child: StatefulBuilder(
-          builder: (_, setModal) => SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  existing == null ? 'Nuovo annuncio' : 'Modifica annuncio',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Titolo'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: msgCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'Messaggio'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: target,
-                  decoration: const InputDecoration(labelText: 'Target'),
-                  items: ['all', 'public', 'work', 'company']
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) => setModal(() => target = v ?? 'all'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: type,
-                  decoration: const InputDecoration(labelText: 'Tipo'),
-                  items: ['avviso', 'aggiornamento', 'alert']
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) => setModal(() => type = v ?? 'avviso'),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Attivo'),
-                  value: active,
-                  onChanged: (v) => setModal(() => active = v),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: Text(existing == null ? 'Pubblica' : 'Salva'),
-                ),
-              ],
-            ),
-          ),
-        ),
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnnouncementFormPage(existing: existing),
       ),
     );
-
-    if (saved != true) return;
-    if (titleCtrl.text.trim().isEmpty) return;
-
-    final svc = AnnouncementsService.instance;
-    final targetCount = await svc.countTargetUsers(target);
-
-    if (existing == null) {
-      await svc.createAnnouncement(
-        title: titleCtrl.text.trim(),
-        message: msgCtrl.text.trim(),
-        target: target,
-        type: type,
-        active: active,
-        targetCount: targetCount,
-      );
-    } else {
-      await svc.updateAnnouncement(
-        id: existing.id,
-        title: titleCtrl.text.trim(),
-        message: msgCtrl.text.trim(),
-        target: target,
-        type: type,
-        active: active,
-        targetCount: targetCount,
-        seenCount: existing.seenCount,
-        createdAt: existing.createdAt,
-      );
-    }
   }
 
   @override
@@ -133,7 +33,7 @@ class NotificationsPage extends StatelessWidget {
           title: 'Notifiche',
           subtitle: 'Popup e annunci in-app',
           trailing: FilledButton.icon(
-            onPressed: () => _showForm(context),
+            onPressed: () => _openForm(context),
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Nuovo'),
             style: FilledButton.styleFrom(
@@ -162,23 +62,55 @@ class NotificationsPage extends StatelessWidget {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: items.length,
-                itemBuilder: (_, i) {
-                  final ann = items[i];
-                  return AnnouncementCard(
-                    announcement: ann,
-                    onEdit: () => _showForm(context, existing: ann),
-                    onToggle: () =>
-                        AnnouncementsService.instance.toggleActive(
-                      ann.id,
-                      ann.active,
-                    ),
-                    onDelete: () =>
-                        AnnouncementsService.instance.deleteAnnouncement(
-                      ann.id,
-                    ),
+              return StreamBuilder<Map<String, int>>(
+                stream:
+                    AnnouncementsService.instance.watchSeenCountsByAnnouncement(),
+                builder: (context, seenSnap) {
+                  final seenCounts = seenSnap.data ?? const {};
+
+                  if (seenSnap.hasError && items.isNotEmpty) {
+                    // Fallback: mostra almeno seenCount salvato sul documento.
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: items.length,
+                      itemBuilder: (_, i) {
+                        final ann = items[i];
+                        return AnnouncementCard(
+                          announcement: ann,
+                          seenCount: 0,
+                          onEdit: () => _openForm(context, existing: ann),
+                          onToggle: () =>
+                              AnnouncementsService.instance.toggleActive(
+                            ann.id,
+                            ann.active,
+                          ),
+                          onDelete: () => AnnouncementsService.instance
+                              .deleteAnnouncement(ann.id),
+                        );
+                      },
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: items.length,
+                    itemBuilder: (_, i) {
+                      final ann = items[i];
+                      return AnnouncementCard(
+                        announcement: ann,
+                        seenCount: seenCounts[ann.id] ?? 0,
+                        onEdit: () => _openForm(context, existing: ann),
+                        onToggle: () =>
+                            AnnouncementsService.instance.toggleActive(
+                          ann.id,
+                          ann.active,
+                        ),
+                        onDelete: () =>
+                            AnnouncementsService.instance.deleteAnnouncement(
+                          ann.id,
+                        ),
+                      );
+                    },
                   );
                 },
               );

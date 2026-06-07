@@ -6,6 +6,7 @@ import '../../../models/announcement.dart';
 
 class AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
+  final int? seenCount;
   final VoidCallback? onToggle;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
@@ -13,6 +14,7 @@ class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({
     super.key,
     required this.announcement,
+    this.seenCount,
     this.onToggle,
     this.onDelete,
     this.onEdit,
@@ -34,6 +36,8 @@ class AnnouncementCard extends StatelessWidget {
     final date = announcement.createdAt != null
         ? DateFormat('dd/MM/yyyy').format(announcement.createdAt!.toDate())
         : '';
+
+    final reads = seenCount ?? announcement.seenCount;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -81,7 +85,7 @@ class AnnouncementCard extends StatelessWidget {
               style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
             Text(
-              '👥 ${announcement.targetCount} · 👁 ${announcement.seenCount}',
+              '👥 ${announcement.targetCount} utenti · 👁 $reads lette',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,

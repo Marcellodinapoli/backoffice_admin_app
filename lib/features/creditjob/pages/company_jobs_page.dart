@@ -2,10 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/job_offer_status.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/firebase/jobs_service.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import 'job_offer_detail_page.dart';
 
 class CompanyJobsPage extends StatelessWidget {
   final String companyId;
@@ -66,6 +69,24 @@ class CompanyJobsPage extends StatelessWidget {
 
   String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
 
+  int _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  void _openDetail(BuildContext context, String jobId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JobOfferDetailPage(
+          jobId: jobId,
+          companyName: companyName,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,13 +99,27 @@ class CompanyJobsPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: JobsService.instance.watchCompanyJobs(companyId),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorView(
+              message:
+                  'Impossibile caricare le offerte di lavoro.\n${snapshot.error}',
+            );
+          }
           if (!snapshot.hasData) return const LoadingView();
-          final docs = snapshot.data!.docs;
+          final docs = [...snapshot.data!.docs];
+          docs.sort((a, b) {
+            final aTs = a.data()['createdAt'] as Timestamp?;
+            final bTs = b.data()['createdAt'] as Timestamp?;
+            if (aTs == null && bTs == null) return 0;
+            if (aTs == null) return 1;
+            if (bTs == null) return -1;
+            return bTs.compareTo(aTs);
+          });
           if (docs.isEmpty) {
             return const EmptyState(
               icon: Icons.work_outline,
               title: 'Nessuna offerta di lavoro',
-              subtitle: 'Questa azienda non ha job offers.',
+              subtitle: 'Questa azienda non ha offerte di lavoro.',
             );
           }
 
@@ -100,7 +135,8 @@ class CompanyJobsPage extends StatelessWidget {
               final title = data['title']?.toString() ?? 'Senza titolo';
               final location = data['location']?.toString() ?? '';
               final online = data['online'] as bool? ?? false;
-              final applicationsCount = data['applicationsCount'] as int? ?? 0;
+              final applicationsCount = _readInt(data['applicationsCount']);
+              final contractType = data['contractType']?.toString() ?? '';
 
               final status = _resolveStatus(data);
 
@@ -123,66 +159,107 @@ class CompanyJobsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _openDetail(context, id),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: AppColors.divider),
+                                    ),
+                                    child: Text(
+                                      JobOfferStatus.label(status),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: _statusFg(status),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: AppColors.divider),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: _statusFg(status),
+                              if (location.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  location,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              if (contractType.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  contractType,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 10),
+                              Text(
+                                'Online: ${online ? "Sì" : "No"} · Candidature: $applicationsCount',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (location.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          location,
-                          style: const TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Text(
-                        'Online: ${online ? "Sì" : "No"} · Candidature: $applicationsCount',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      if (createdDate.isNotEmpty || expiryDate.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          [
-                            if (createdDate.isNotEmpty) 'Pubblicato: $createdDate',
-                            if (expiryDate.isNotEmpty) 'Scade: $expiryDate',
-                          ].join(' · '),
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Tocca per vedere l\'inserzione completa',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (createdDate.isNotEmpty ||
+                                  expiryDate.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  [
+                                    if (createdDate.isNotEmpty)
+                                      'Pubblicato: $createdDate',
+                                    if (expiryDate.isNotEmpty)
+                                      'Scade: $expiryDate',
+                                  ].join(' · '),
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                       const SizedBox(height: 14),
                       Wrap(
                         spacing: 10,

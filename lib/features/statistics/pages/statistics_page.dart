@@ -161,13 +161,16 @@ class _StatsGrid extends StatelessWidget {
       ),
     ];
 
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 24),
+      physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.15,
+        childAspectRatio: 0.95,
       ),
       itemCount: cards.length,
       itemBuilder: (_, i) => cards[i],

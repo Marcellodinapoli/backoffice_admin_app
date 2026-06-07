@@ -193,13 +193,13 @@ class CreditJobPage extends StatelessWidget {
                                   runSpacing: 8,
                                   children: [
                                     _statChip(
-                                      label: 'Pending',
+                                      label: 'In attesa',
                                       value: stats.pending,
                                       color: AppColors.warning,
                                       background: AppColors.warningBg,
                                     ),
                                     _statChip(
-                                      label: 'Approved',
+                                      label: 'Approvate',
                                       value: stats.approved,
                                       color: AppColors.success,
                                       background: AppColors.successBg,

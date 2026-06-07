@@ -6,7 +6,7 @@ import '../../../services/firebase/stats_service.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/section_header.dart';
-import '../../statistics/widgets/stat_card.dart';
+import '../widgets/dashboard_detail_card.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -71,7 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: _DashboardGrid(stats: _stats!),
+                      child: _DashboardContent(stats: _stats!),
                     ),
         ),
       ],
@@ -79,69 +79,100 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-class _DashboardGrid extends StatelessWidget {
+class _DashboardContent extends StatelessWidget {
   final DashboardStats stats;
 
-  const _DashboardGrid({required this.stats});
+  const _DashboardContent({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      StatCard(
-        title: 'Utenti',
-        value: '${stats.totalUsers}',
-        icon: Icons.people_outline,
-        color: AppColors.primary,
-        background: AppColors.accentSoft,
-      ),
-      StatCard(
-        title: 'Aziende',
-        value: '${stats.totalCompanies}',
-        icon: Icons.business_outlined,
-        color: AppColors.primaryLight,
-        background: AppColors.accentSoft,
-      ),
-      StatCard(
-        title: 'Corsi',
-        value: '${stats.totalCourses}',
-        icon: Icons.menu_book_outlined,
-        color: AppColors.warning,
-        background: AppColors.warningBg,
-      ),
-      StatCard(
-        title: 'Offerte Job',
-        value: '${stats.totalJobOffers}',
-        icon: Icons.work_outline,
-        color: AppColors.success,
-        background: AppColors.successBg,
-      ),
-      StatCard(
-        title: 'Candidature',
-        value: '${stats.totalApplications}',
-        icon: Icons.assignment_outlined,
-        color: AppColors.info,
-        background: AppColors.infoBg,
-      ),
-      StatCard(
-        title: 'Roleplay',
-        value: '${stats.totalRoleplay}',
-        icon: Icons.record_voice_over_outlined,
-        color: AppColors.primary,
-        background: AppColors.accentSoft,
-      ),
-    ];
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.15,
-      ),
-      itemCount: cards.length,
-      itemBuilder: (_, i) => cards[i],
+    return ListView(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 24),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        DashboardDetailCard(
+          title: 'Utenti',
+          value: '${stats.totalUsers}',
+          accentColor: AppColors.primary,
+          details: [
+            DashboardDetailItem('Attivi', stats.activeUsers, AppColors.success),
+            DashboardDetailItem(
+              'Bloccati',
+              stats.blockedUsers,
+              AppColors.warning,
+            ),
+            DashboardDetailItem(
+              'Cancellati',
+              stats.deletedUsers,
+              AppColors.error,
+            ),
+            DashboardDetailItem(
+              'Mese',
+              stats.newUsersThisMonth,
+              AppColors.warning,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        DashboardDetailCard(
+          title: 'Aziende',
+          value: '${stats.totalCompanies}',
+          accentColor: AppColors.primary,
+        ),
+        const SizedBox(height: 12),
+        DashboardDetailCard(
+          title: 'Corsi',
+          value: '${stats.totalCourses}',
+          accentColor: AppColors.primary,
+        ),
+        const SizedBox(height: 12),
+        DashboardDetailCard(
+          title: 'Candidature',
+          value: '${stats.totalApplications}',
+          accentColor: AppColors.primary,
+        ),
+        const SizedBox(height: 12),
+        DashboardDetailCard(
+          title: 'Offerte Job',
+          value: '${stats.totalJobOffers}',
+          accentColor: AppColors.primary,
+          details: [
+            DashboardDetailItem(
+              'Attive',
+              stats.activeJobOffers,
+              AppColors.success,
+            ),
+            DashboardDetailItem(
+              'In attesa',
+              stats.pendingJobOffers,
+              AppColors.warning,
+            ),
+            DashboardDetailItem(
+              'Bloccate',
+              stats.blockedJobOffers,
+              AppColors.error,
+            ),
+            DashboardDetailItem(
+              'Mese',
+              stats.newJobOffersThisMonth,
+              AppColors.warning,
+            ),
+            DashboardDetailItem(
+              'Scadute',
+              stats.expiredJobOffers,
+              AppColors.textMuted,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        DashboardDetailCard(
+          title: 'Role Play',
+          value: '${stats.totalRoleplay}',
+          accentColor: AppColors.primary,
+        ),
+      ],
     );
   }
 }
-

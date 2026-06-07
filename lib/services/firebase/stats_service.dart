@@ -21,6 +21,7 @@ class StatsService {
       usersCol.count().get(),
       usersCol.where('status', isEqualTo: 'active').count().get(),
       usersCol.where('status', isEqualTo: 'blocked').count().get(),
+      usersCol.where('status', isEqualTo: 'deleted').count().get(),
       usersCol
           .where('createdAt',
               isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
@@ -35,6 +36,16 @@ class StatsService {
           .count()
           .get(),
       jobsCol.where('status', isEqualTo: 'pending').count().get(),
+      jobsCol.where('status', isEqualTo: 'blocked').count().get(),
+      jobsCol
+          .where('createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .count()
+          .get(),
+      jobsCol
+          .where('expiryDate', isLessThan: Timestamp.fromDate(now))
+          .count()
+          .get(),
       _fs.collection(FirestoreCollections.jobApplications).count().get(),
       _fs.collection(FirestoreCollections.roleplay).count().get(),
     ]);
@@ -43,14 +54,18 @@ class StatsService {
       totalUsers: results[0].count ?? 0,
       activeUsers: results[1].count ?? 0,
       blockedUsers: results[2].count ?? 0,
-      newUsersThisMonth: results[3].count ?? 0,
-      totalCompanies: results[4].count ?? 0,
-      totalCourses: results[5].count ?? 0,
-      totalJobOffers: results[6].count ?? 0,
-      activeJobOffers: results[7].count ?? 0,
-      pendingJobOffers: results[8].count ?? 0,
-      totalApplications: results[9].count ?? 0,
-      totalRoleplay: results[10].count ?? 0,
+      deletedUsers: results[3].count ?? 0,
+      newUsersThisMonth: results[4].count ?? 0,
+      totalCompanies: results[5].count ?? 0,
+      totalCourses: results[6].count ?? 0,
+      totalJobOffers: results[7].count ?? 0,
+      activeJobOffers: results[8].count ?? 0,
+      pendingJobOffers: results[9].count ?? 0,
+      blockedJobOffers: results[10].count ?? 0,
+      newJobOffersThisMonth: results[11].count ?? 0,
+      expiredJobOffers: results[12].count ?? 0,
+      totalApplications: results[13].count ?? 0,
+      totalRoleplay: results[14].count ?? 0,
     );
   }
 }

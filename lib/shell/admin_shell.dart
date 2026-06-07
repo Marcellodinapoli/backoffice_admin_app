@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../auth/admin_login_page.dart';
+import '../backoffice_web_pages/bk_community_page.dart';
+import '../backoffice_web_pages/bk_costs_page.dart';
+import '../backoffice_web_pages/bk_security_page.dart';
+import '../backoffice_web_pages/bk_support_page.dart';
 import '../core/theme/app_colors.dart';
+import '../features/companies/pages/companies_page.dart';
+import '../features/courses/pages/courses_page.dart';
 import '../features/creditjob/pages/creditjob_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/notifications/pages/notifications_page.dart';
+import '../features/roleplay/pages/roleplay_page.dart';
 import '../features/settings/pages/settings_page.dart';
+import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
 import '../services/auth_service.dart';
 import '../shared/widgets/gradient_header.dart';
@@ -22,6 +30,22 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _index = 0;
   final _authService = AuthService();
+
+  static const _pages = [
+    DashboardPage(),
+    UsersPage(),
+    CompaniesPage(),
+    CoursesPage(),
+    NotificationsPage(),
+    CreditJobPage(),
+    RoleplayPage(),
+    StatisticsPage(),
+    BkCommunityPage(),
+    BkSupportPage(),
+    BkCostsPage(),
+    BkSecurityPage(),
+    SettingsPage(),
+  ];
 
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
@@ -55,19 +79,13 @@ class _AdminShellState extends State<AdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    const pages = [
-      DashboardPage(),
-      UsersPage(),
-      NotificationsPage(),
-      CreditJobPage(),
-      SettingsPage(),
-    ];
+    final safeIndex = _index.clamp(0, _pages.length - 1);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: GradientHeader(
         title: 'BackOffice Admin',
-        subtitle: AdminDrawer.titles[_index],
+        subtitle: AdminDrawer.titles[safeIndex],
         actions: [
           IconButton(
             tooltip: 'Logout',
@@ -77,12 +95,12 @@ class _AdminShellState extends State<AdminShell> {
         ],
       ),
       drawer: AdminDrawer(
-        selectedIndex: _index,
+        selectedIndex: safeIndex,
         onSelect: (i) => setState(() => _index = i),
       ),
       body: IndexedStack(
-        index: _index,
-        children: pages,
+        index: safeIndex,
+        children: _pages,
       ),
     );
   }

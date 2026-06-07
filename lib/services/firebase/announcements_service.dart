@@ -19,6 +19,35 @@ class AnnouncementsService {
             snap.docs.map((d) => Announcement.fromFirestore(d)).toList());
   }
 
+  /// Conta quanti utenti distinti hanno letto ogni annuncio (CreditPlanet salva in
+  /// users/{uid}/seen_announcements/{announcementId}).
+  Stream<Map<String, int>> watchSeenCountsByAnnouncement() {
+    return _fs.db
+        .collectionGroup(FirestoreCollections.seenAnnouncements)
+        .snapshots()
+        .map(_parseSeenCounts);
+  }
+
+  static Map<String, int> _parseSeenCounts(
+    QuerySnapshot<Map<String, dynamic>> snap,
+  ) {
+    final usersByAnnouncement = <String, Set<String>>{};
+
+    for (final doc in snap.docs) {
+      if (doc.id == '_init') continue;
+
+      final userId = doc.reference.parent.parent?.id;
+      if (userId == null) continue;
+
+      usersByAnnouncement.putIfAbsent(doc.id, () => {}).add(userId);
+    }
+
+    return {
+      for (final entry in usersByAnnouncement.entries)
+        entry.key: entry.value.length,
+    };
+  }
+
   Future<void> toggleActive(String id, bool current) {
     return _fs.doc(FirestoreCollections.announcements, id).update({
       'active': !current,

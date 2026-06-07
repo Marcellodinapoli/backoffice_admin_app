@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 class PushService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -9,19 +10,19 @@ class PushService {
 
     // Token FCM (utile per debug)
     final token = await _messaging.getToken();
-    print("FCM Token: $token");
+    debugPrint('FCM Token: $token');
 
     // Notifica ricevuta in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print(
-        "🔔 Notifica foreground: ${message.notification?.title}",
+      debugPrint(
+        'Notifica foreground: ${message.notification?.title}',
       );
     });
 
     // Notifica cliccata
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print(
-        "📲 Notifica aperta: ${message.notification?.title}",
+      debugPrint(
+        'Notifica aperta: ${message.notification?.title}',
       );
     });
   }
