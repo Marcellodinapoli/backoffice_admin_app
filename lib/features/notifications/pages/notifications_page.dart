@@ -24,8 +24,15 @@ class NotificationsPage extends StatelessWidget {
     );
   }
 
+  EdgeInsets _listPadding(BuildContext context) {
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
+    return EdgeInsets.fromLTRB(16, 0, 16, 24 + bottom);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final listPadding = _listPadding(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -71,7 +78,7 @@ class NotificationsPage extends StatelessWidget {
                   if (seenSnap.hasError && items.isNotEmpty) {
                     // Fallback: mostra almeno seenCount salvato sul documento.
                     return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      padding: listPadding,
                       itemCount: items.length,
                       itemBuilder: (_, i) {
                         final ann = items[i];
@@ -92,7 +99,7 @@ class NotificationsPage extends StatelessWidget {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: listPadding,
                     itemCount: items.length,
                     itemBuilder: (_, i) {
                       final ann = items[i];

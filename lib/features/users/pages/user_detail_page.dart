@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/constants/user_account_status.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/app_user.dart';
 import '../../../services/firebase/users_service.dart';
@@ -12,14 +12,7 @@ class UserDetailPage extends StatelessWidget {
 
   const UserDetailPage({super.key, required this.userId});
 
-  String _formatDate(dynamic ts) {
-    if (ts == null) return 'N/D';
-    try {
-      return DateFormat('dd/MM/yyyy HH:mm').format(ts.toDate());
-    } catch (_) {
-      return 'N/D';
-    }
-  }
+  String _formatDate(dynamic ts) => UserAccountStatus.formatDateTime(ts);
 
   Future<void> _promptReason(
     BuildContext context, {
@@ -124,17 +117,39 @@ class UserDetailPage extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            StatusBadge.fromStatus(user.status),
+                            StatusBadge.fromStatus(user.displayStatus),
                           ],
                         ),
                         const Divider(height: 28),
                         _infoRow('Tipo', user.type),
+                        if (user.type == 'work' && user.status != user.displayStatus)
+                          _infoRow('Stato Firestore', user.status),
                         _infoRow('Ruolo', user.workRoleLabel),
                         _infoRow('Registrato', _formatDate(user.createdAt)),
                         _infoRow('Ultimo accesso', _formatDate(user.lastLoginAt)),
-                        if (user.blockedReason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            'Aggiornato in tempo reale da Firestore',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.85,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (user.status == 'blocked' && user.blockedAt != null)
+                          _infoRow('Bloccato il', _formatDate(user.blockedAt)),
+                        if (user.status == 'blocked' &&
+                            user.blockedReason != null &&
+                            user.blockedReason!.isNotEmpty)
                           _infoRow('Motivo blocco', user.blockedReason!),
-                        if (user.standbyReason != null)
+                        if (user.status == 'standby' && user.standbyAt != null)
+                          _infoRow('Standby dal', _formatDate(user.standbyAt)),
+                        if (user.status == 'standby' &&
+                            user.standbyReason != null &&
+                            user.standbyReason!.isNotEmpty)
                           _infoRow('Motivo standby', user.standbyReason!),
                       ],
                     ),
@@ -177,7 +192,7 @@ class UserDetailPage extends StatelessWidget {
                             UsersService.instance.standbyUser(userId, r),
                       ),
                     ),
-                    if (user.status != 'active')
+                    if (user.needsAdminActivation)
                       _actionChip(
                         label: 'Attiva',
                         icon: Icons.check_circle_outline,

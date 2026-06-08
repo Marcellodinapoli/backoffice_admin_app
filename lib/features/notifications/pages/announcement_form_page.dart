@@ -95,6 +95,8 @@ class _AnnouncementFormPageState extends State<AnnouncementFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -103,7 +105,7 @@ class _AnnouncementFormPageState extends State<AnnouncementFormPage> {
         title: Text(_isEditing ? 'Modifica annuncio' : 'Nuovo annuncio'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -158,8 +160,9 @@ class _AnnouncementFormPageState extends State<AnnouncementFormPage> {
         ),
       ),
       bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.only(bottom: 8),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
             children: [
               Expanded(

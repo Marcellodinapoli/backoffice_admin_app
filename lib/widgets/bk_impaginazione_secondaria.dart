@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../auth/admin_login_page.dart';
 
-/// Impaginazione secondaria per BackOffice
-/// (TopBar unica + solo contenuto centrato, senza menu laterale)
+import '../auth/admin_login_page.dart';
+import '../core/theme/app_colors.dart';
+import 'bk_page_shell.dart';
+
+/// Impaginazione secondaria BackOffice — stessa struttura di CreditCalc.
 class ImpaginazioneSecondariaBk extends StatelessWidget {
   final String pageTitle;
   final Widget body;
@@ -14,9 +16,6 @@ class ImpaginazioneSecondariaBk extends StatelessWidget {
     required this.body,
   });
 
-  // ---------------------------------------------------------------------------
-  // ACTIONS
-  // ---------------------------------------------------------------------------
   Future<void> _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
 
@@ -24,50 +23,48 @@ class ImpaginazioneSecondariaBk extends StatelessWidget {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const AdminLoginPage()),
-            (route) => false,
+        (route) => false,
       );
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // BUILD
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1565C0),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        backgroundColor: const Color(0xFFECEFF1),
+        elevation: 1,
         title: Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
             const SizedBox(width: 4),
-            const Text(
-              "BackOffice",
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              width: 1,
-              height: 18,
-              color: Colors.white54,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              pageTitle,
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 16,
-                color: Colors.white,
+            const Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Back',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Office',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -75,37 +72,14 @@ class ImpaginazioneSecondariaBk extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Logout',
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () => _logout(context),
           ),
         ],
       ),
-
-      // ✅ FIX: allineamento in alto
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(28),
-              child: body,
-            ),
-          ),
-        ),
+      body: BkPageShellBody(
+        pageTitle: pageTitle,
+        child: body,
       ),
     );
   }

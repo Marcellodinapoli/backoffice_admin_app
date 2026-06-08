@@ -104,7 +104,7 @@ class _StatsGrid extends StatelessWidget {
         background: AppColors.successBg,
       ),
       StatCard(
-        title: 'Utenti bloccati',
+        title: 'Bloccati/Standby',
         value: '${stats.blockedUsers}',
         icon: Icons.block,
         color: AppColors.error,

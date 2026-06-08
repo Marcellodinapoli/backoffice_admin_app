@@ -4,6 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../core/theme/app_colors.dart';
+import '../shared/widgets/section_header.dart';
 import 'bk_community_topic_page.dart';
 
 
@@ -254,7 +257,6 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        fullscreenDialog: true,
         builder: (_) => CommunityTopicPage(
           topicId: topic.id,
           topicTitle: topic['title'] ?? 'Discussione',
@@ -296,35 +298,26 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
   // ================================================================
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: const Text("Nuovo argomento"),
-                  onPressed: _openNewTopicDialog,
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(
+          title: 'Community',
+          subtitle: 'Discussioni tra utenti',
+          trailing: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
-
-            const SizedBox(height: 16),
-
-            Expanded(
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Nuovo argomento'),
+            onPressed: _openNewTopicDialog,
+          ),
+        ),
+        Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('community')
@@ -367,6 +360,7 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
                   }
 
                   return ListView.builder(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + bottomInset),
                     itemCount: topics.length,
                     itemBuilder: (context, index) {
 
@@ -480,11 +474,8 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
                   );
                 },
               ),
-            ),
-
-          ],
         ),
-      ),
+      ],
     );
   }
 }

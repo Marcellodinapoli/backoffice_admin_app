@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_collections.dart';
+import '../../core/constants/user_account_status.dart';
 import '../../models/dashboard_stats.dart';
 import 'firestore_service.dart';
 
@@ -20,7 +21,10 @@ class StatsService {
     final results = await Future.wait([
       usersCol.count().get(),
       usersCol.where('status', isEqualTo: 'active').count().get(),
-      usersCol.where('status', isEqualTo: 'blocked').count().get(),
+      usersCol
+          .where('status', whereIn: UserAccountStatus.blockedStatusValues)
+          .count()
+          .get(),
       usersCol.where('status', isEqualTo: 'deleted').count().get(),
       usersCol
           .where('createdAt',

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_collections.dart';
+import '../../core/constants/user_account_status.dart';
 import '../../models/app_user.dart';
 import 'firestore_service.dart';
 
@@ -47,14 +48,21 @@ class UsersService {
   }
 
   Future<void> activateUser(String userId) {
-    return _fs.doc(FirestoreCollections.users, userId).update({
-      'status': 'active',
-    });
+    return _fs
+        .doc(FirestoreCollections.users, userId)
+        .update(UserAccountStatus.activationUpdate());
   }
 
-  Future<void> toggleType(String userId, String currentType) {
+  Future<void> toggleType(String userId, String currentType) async {
     final newType = currentType == 'work' ? 'public' : 'work';
-    return updateField(userId, 'type', newType);
+    if (newType == 'work') {
+      await _fs.doc(FirestoreCollections.users, userId).update({
+        'type': newType,
+        'status': UserAccountStatus.workRegistrationStatus,
+      });
+      return;
+    }
+    await updateField(userId, 'type', newType);
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>?> getCompany(

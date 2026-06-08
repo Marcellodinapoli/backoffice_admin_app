@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/constants/user_account_status.dart';
+
 class AppUser {
   final String id;
   final String name;
@@ -35,12 +37,14 @@ class AppUser {
 
   factory AppUser.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
+    final type = data['type']?.toString() ?? 'public';
     return AppUser(
       id: doc.id,
       name: data['name']?.toString() ?? 'Senza nome',
       email: data['email']?.toString() ?? '',
-      type: data['type']?.toString() ?? 'public',
-      status: data['status']?.toString() ?? 'pending',
+      type: type,
+      status: data['status']?.toString() ??
+          UserAccountStatus.defaultRawStatus(type),
       workRole: data['workRole']?.toString(),
       companyId: data['companyId']?.toString(),
       companyCode: data['companyCode']?.toString(),
@@ -52,6 +56,12 @@ class AppUser {
       standbyAt: data['standbyAt'] as Timestamp?,
     );
   }
+
+  String get displayStatus =>
+      UserAccountStatus.displayStatus(status, type: type);
+
+  bool get needsAdminActivation =>
+      UserAccountStatus.needsAdminActivation(status, type: type);
 
   String get workRoleLabel {
     switch (workRole) {

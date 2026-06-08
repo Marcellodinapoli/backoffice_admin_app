@@ -98,9 +98,12 @@ class _AdminShellState extends State<AdminShell> {
         selectedIndex: safeIndex,
         onSelect: (i) => setState(() => _index = i),
       ),
-      body: IndexedStack(
-        index: safeIndex,
-        children: _pages,
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(
+          index: safeIndex,
+          children: _pages,
+        ),
       ),
     );
   }

@@ -34,6 +34,16 @@ class DashboardStats {
   });
 }
 
+bool _readFirestoreBool(dynamic raw, {bool defaultValue = false}) {
+  if (raw is bool) return raw;
+  if (raw is num) return raw != 0;
+  if (raw is String) {
+    final normalized = raw.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return defaultValue;
+}
+
 class MaintenanceSettings {
   final bool enabled;
   final String section;
@@ -48,21 +58,26 @@ class MaintenanceSettings {
       return const MaintenanceSettings(enabled: false, section: 'Tutto');
     }
 
-    final enabledRaw = data['enabled'];
-    var enabled = false;
-    if (enabledRaw is bool) {
-      enabled = enabledRaw;
-    } else if (enabledRaw is num) {
-      enabled = enabledRaw != 0;
-    } else if (enabledRaw is String) {
-      final normalized = enabledRaw.trim().toLowerCase();
-      enabled = normalized == 'true' || normalized == '1';
-    }
-
     final section = data['section']?.toString().trim();
     return MaintenanceSettings(
-      enabled: enabled,
+      enabled: _readFirestoreBool(data['enabled']),
       section: (section == null || section.isEmpty) ? 'Tutto' : section,
+    );
+  }
+}
+
+/// Interruttore globale push (`settings/notifications`).
+class NotificationSettings {
+  final bool enabled;
+
+  const NotificationSettings({required this.enabled});
+
+  factory NotificationSettings.fromMap(Map<String, dynamic>? data) {
+    if (data == null) {
+      return const NotificationSettings(enabled: false);
+    }
+    return NotificationSettings(
+      enabled: _readFirestoreBool(data['enabled']),
     );
   }
 }

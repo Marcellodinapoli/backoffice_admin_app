@@ -175,7 +175,7 @@ class _CommunityTopicPageState extends State<CommunityTopicPage> {
         MediaQuery.of(context).size.width < 800;
 
     return ImpaginazioneSecondariaBk(
-      pageTitle: widget.topicTitle,
+      pageTitle: 'Discussione',
       body: Card(
         elevation: 3,
         color: const Color(0xFFF5F5F5),
@@ -189,7 +189,7 @@ class _CommunityTopicPageState extends State<CommunityTopicPage> {
             children: [
 
               Text(
-                widget.topicTitle,
+                'Argomento: ${widget.topicTitle}',
                 style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold),

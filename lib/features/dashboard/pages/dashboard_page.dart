@@ -99,7 +99,7 @@ class _DashboardContent extends StatelessWidget {
           details: [
             DashboardDetailItem('Attivi', stats.activeUsers, AppColors.success),
             DashboardDetailItem(
-              'Bloccati',
+              'Bloccati/Standby',
               stats.blockedUsers,
               AppColors.warning,
             ),

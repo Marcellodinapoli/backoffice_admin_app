@@ -5,6 +5,7 @@ import '../../../models/dashboard_stats.dart';
 import '../../../services/firebase/settings_service.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/section_header.dart';
+import '../../../shared/widgets/settings_cleanup_button.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,6 +24,35 @@ class _SettingsPageState extends State<SettingsPage> {
     'CreditCalc',
     'Area riservata',
   ];
+
+  Future<void> _saveNotifications(bool enabled) async {
+    setState(() => _saving = true);
+    try {
+      await SettingsService.instance.saveNotifications(enabled: enabled);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enabled
+                ? 'Notifiche push attivate per tutti gli utenti'
+                : 'Notifiche push disattivate',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Salvataggio notifiche non riuscito. '
+            'Verifica di essere loggato come admin Firebase.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   Future<void> _save(MaintenanceSettings maintenance) async {
     setState(() => _saving = true);
@@ -50,36 +80,18 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _cleanup() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Pulizia database'),
-        content: const Text(
-          'Verranno eliminati solo pendingLogins scaduti (>2 min) '
-          'e dati test/debug. I dati reali non verranno toccati.',
+  Widget _buildNotificationsCard(NotificationSettings notifications) {
+    return Card(
+      child: SwitchListTile(
+        title: const Text('Notifiche push attive'),
+        subtitle: const Text(
+          'Abilita o disabilita l\'invio push a tutti gli utenti '
+          '(salvato su Firestore)',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annulla'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Pulisci'),
-          ),
-        ],
+        value: notifications.enabled,
+        onChanged: _saving ? null : _saveNotifications,
       ),
     );
-    if (ok != true) return;
-
-    final count = await SettingsService.instance.cleanupObsoleteData();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pulizia completata: $count elementi')),
-      );
-    }
   }
 
   Widget _buildMaintenanceCard(MaintenanceSettings maintenance) {
@@ -132,25 +144,37 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         const SectionHeader(
           title: 'Impostazioni',
-          subtitle: 'Manutenzione e manutenzione sistema',
+          subtitle: 'Manutenzione, notifiche push e sistema',
         ),
         Expanded(
           child: StreamBuilder<MaintenanceSettings>(
             stream: SettingsService.instance.watchMaintenance(),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting &&
-                  !snap.hasData) {
+            builder: (context, maintenanceSnap) {
+              if (maintenanceSnap.connectionState == ConnectionState.waiting &&
+                  !maintenanceSnap.hasData) {
                 return const LoadingView();
               }
 
-              final maintenance = snap.data ??
+              final maintenance = maintenanceSnap.data ??
                   const MaintenanceSettings(enabled: false, section: 'Tutto');
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                children: [
-                  _buildMaintenanceCard(maintenance),
-                  const SizedBox(height: 12),
+              return StreamBuilder<NotificationSettings>(
+                stream: SettingsService.instance.watchNotifications(),
+                builder: (context, notificationsSnap) {
+                  final notifications = notificationsSnap.data ??
+                      const NotificationSettings(enabled: false);
+
+                  final bottomInset =
+                      MediaQuery.viewPaddingOf(context).bottom;
+
+                  return ListView(
+                    padding:
+                        EdgeInsets.fromLTRB(16, 0, 16, 24 + bottomInset),
+                    children: [
+                      _buildMaintenanceCard(maintenance),
+                      const SizedBox(height: 12),
+                      _buildNotificationsCard(notifications),
+                      const SizedBox(height: 12),
                   Card(
                     child: ListTile(
                       leading: Container(
@@ -165,28 +189,29 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                       title: const Text('Pulizia database'),
-                      subtitle: const Text('Rimuove dati scaduti e debug'),
+                      subtitle: const Text(
+                        'Rimuove pendingLogins scaduti e collezioni test/debug',
+                      ),
                       trailing: _saving
                           ? const SizedBox(
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : OutlinedButton(
-                              onPressed: _cleanup,
-                              child: const Text('Pulisci'),
-                            ),
+                          : const SettingsCleanupButton(compact: true),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Card(
-                    child: ListTile(
-                      leading: Icon(Icons.info_outline),
-                      title: Text('Versione app'),
-                      subtitle: Text('1.0.0 · BackOffice Admin Mobile'),
-                    ),
-                  ),
-                ],
+                      const Card(
+                        child: ListTile(
+                          leading: Icon(Icons.info_outline),
+                          title: Text('Versione app'),
+                          subtitle: Text('1.0.0 · BackOffice Admin Mobile'),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),

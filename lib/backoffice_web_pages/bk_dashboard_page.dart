@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/constants/user_account_status.dart';
+
 class BkDashboardPage extends StatelessWidget {
   const BkDashboardPage({super.key});
 
@@ -17,7 +19,10 @@ class BkDashboardPage extends StatelessWidget {
 
     final total = await col.count().get();
     final active = await col.where('status', isEqualTo: 'active').count().get();
-    final blocked = await col.where('status', isEqualTo: 'blocked').count().get();
+    final blocked = await col
+        .where('status', whereIn: UserAccountStatus.blockedStatusValues)
+        .count()
+        .get();
     final deleted = await col.where('status', isEqualTo: 'deleted').count().get();
 
     final now = DateTime.now();
@@ -82,12 +87,7 @@ class BkDashboardPage extends StatelessWidget {
   }
 
   Future<int> _countCompanies() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('users')
-        .where('type', isEqualTo: 'company')
-        .count()
-        .get();
-    return snap.count ?? 0;
+    return _countCollection('companies');
   }
 
   Future<int> _countRoleplay() async {
@@ -135,7 +135,7 @@ class BkDashboardPage extends StatelessWidget {
                 accentColor: Colors.blue,
                 details: [
                   _DetailRow("Attivi", users["active"]!, Colors.green),
-                  _DetailRow("Bloccati", users["blocked"]!, Colors.orange),
+                  _DetailRow("Bloccati/Standby", users["blocked"]!, Colors.orange),
                   _DetailRow("Cancellati", users["deleted"]!, Colors.red),
                   _DetailRow("Mese", users["month"]!, Colors.amber),
                 ],

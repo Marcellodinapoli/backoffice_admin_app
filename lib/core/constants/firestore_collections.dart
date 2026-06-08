@@ -15,5 +15,6 @@ abstract final class FirestoreCollections {
   static const securityLogs = 'security_logs';
 
   static const maintenanceDoc = 'maintenance';
+  static const notificationsDoc = 'notifications';
   static const jobOfferRulesDoc = 'job_offer_rules';
 }

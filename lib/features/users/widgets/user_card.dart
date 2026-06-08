@@ -77,7 +77,7 @@ class UserCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              StatusBadge.fromStatus(user.status),
+              StatusBadge.fromStatus(user.displayStatus),
               const SizedBox(width: 4),
               const Icon(Icons.chevron_right, color: AppColors.textMuted),
             ],
