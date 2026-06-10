@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_collections.dart';
+import '../../models/app_user.dart';
 import '../../models/company.dart';
 import 'firestore_service.dart';
 
@@ -33,13 +34,12 @@ class CompaniesService {
         );
   }
 
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-      watchLinkedWorkUsers(String companyCode) {
+  Stream<List<AppUser>> watchLinkedWorkUsers(String companyCode) {
     return _fs
         .collection(FirestoreCollections.users)
         .where('companyCode', isEqualTo: companyCode)
         .snapshots()
-        .map((snap) => snap.docs);
+        .map((snap) => snap.docs.map(AppUser.fromFirestore).toList());
   }
 
   Future<void> blockCompany(

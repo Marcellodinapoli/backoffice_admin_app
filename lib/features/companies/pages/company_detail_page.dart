@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../models/app_user.dart';
 import '../../../models/company.dart';
 import '../../../services/firebase/companies_service.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../users/pages/user_detail_page.dart';
 
 class CompanyDetailPage extends StatelessWidget {
   final String companyId;
@@ -111,20 +114,75 @@ class CompanyDetailPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (company.companyCode != null)
-                      StreamBuilder(
+                    if (company.companyCode != null) ...[
+                      const SectionHeader(title: 'Collaboratori collegati'),
+                      const SizedBox(height: 8),
+                      StreamBuilder<List<AppUser>>(
                         stream: CompaniesService.instance
                             .watchLinkedWorkUsers(company.companyCode!),
                         builder: (context, usersSnap) {
-                          final count = usersSnap.data?.length ?? 0;
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.people_outline),
-                              title: Text('$count utenti work collegati'),
-                            ),
+                          if (!usersSnap.hasData) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          final collaborators = usersSnap.data!;
+                          if (collaborators.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Nessun collaboratore collegato',
+                                style: TextStyle(color: AppColors.textSecondary),
+                              ),
+                            );
+                          }
+
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: collaborators.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final user = collaborators[index];
+                              return Card(
+                                child: ListTile(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          UserDetailPage(userId: user.id),
+                                    ),
+                                  ),
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.accentSoft,
+                                    child: Text(
+                                      user.name.isNotEmpty
+                                          ? user.name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Text(user.email),
+                                  trailing: StatusBadge.fromStatus(user.status),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       children: [
