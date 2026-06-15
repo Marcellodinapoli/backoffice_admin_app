@@ -1,3 +1,5 @@
+import '../core/utils/roleplay_ai_provider.dart';
+
 class RoleplaySimulation {
   final String id;
   final String title;
@@ -6,6 +8,7 @@ class RoleplaySimulation {
   final String? audioUrl;
   final List<Map<String, dynamic>> practiceData;
   final String date;
+  final String aiProvider;
 
   const RoleplaySimulation({
     required this.id,
@@ -15,6 +18,7 @@ class RoleplaySimulation {
     this.audioUrl,
     this.practiceData = const [],
     required this.date,
+    this.aiProvider = RoleplayAiProvider.hetzner,
   });
 
   factory RoleplaySimulation.fromFirestore(String id, Map<String, dynamic> data) {
@@ -31,6 +35,7 @@ class RoleplaySimulation {
       audioUrl: data['audioUrl']?.toString(),
       practiceData: practice,
       date: data['date']?.toString() ?? '',
+      aiProvider: RoleplayAiProvider.read(data),
     );
   }
 }
