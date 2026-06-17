@@ -12,6 +12,7 @@ import '../features/creditjob/pages/creditjob_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/notifications/pages/notifications_page.dart';
 import '../features/roleplay/pages/roleplay_page.dart';
+import '../features/coupons/pages/coupons_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
@@ -42,6 +43,7 @@ class _AdminShellState extends State<AdminShell> {
     StatisticsPage(),
     BkCommunityPage(),
     BkSupportPage(),
+    CouponsPage(),
     BkCostsPage(),
     BkSecurityPage(),
     SettingsPage(),
