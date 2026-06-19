@@ -5,6 +5,7 @@ class RoleplaySimulation {
   final String title;
   final String category;
   final String prompt;
+  final String gptPrompt;
   final String? audioUrl;
   final List<Map<String, dynamic>> practiceData;
   final String date;
@@ -15,6 +16,7 @@ class RoleplaySimulation {
     required this.title,
     required this.category,
     required this.prompt,
+    this.gptPrompt = '',
     this.audioUrl,
     this.practiceData = const [],
     required this.date,
@@ -32,6 +34,7 @@ class RoleplaySimulation {
       title: data['title']?.toString() ?? '',
       category: data['category']?.toString() ?? 'Sollecito',
       prompt: data['prompt']?.toString() ?? '',
+      gptPrompt: data['gptPrompt']?.toString() ?? '',
       audioUrl: data['audioUrl']?.toString(),
       practiceData: practice,
       date: data['date']?.toString() ?? '',

@@ -33,6 +33,7 @@ class RoleplayService {
     required String title,
     required String category,
     required String prompt,
+    required String gptPrompt,
     required List<Map<String, String>> practiceData,
     required String aiProvider,
   }) {
@@ -40,6 +41,7 @@ class RoleplayService {
       'title': title,
       'category': category,
       'prompt': prompt,
+      'gptPrompt': gptPrompt,
       'practiceData': practiceData,
       'aiProvider': aiProvider,
     });
@@ -49,9 +51,9 @@ class RoleplayService {
     return _fs.doc(FirestoreCollections.roleplay, id).delete();
   }
 
-  Future<void> updatePrompt(String id, String prompt) {
+  Future<void> updatePromptField(String id, String field, String value) {
     return _fs.doc(FirestoreCollections.roleplay, id).update({
-      'prompt': prompt,
+      field: value,
     });
   }
 }

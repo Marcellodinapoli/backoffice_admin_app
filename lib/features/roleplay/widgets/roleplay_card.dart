@@ -116,6 +116,16 @@ class RoleplayCard extends StatelessWidget {
               current: simulation.aiProvider,
               onChanged: onAiProviderChanged ?? (_) {},
             ),
+            const SizedBox(height: 8),
+            Text(
+              simulation.aiProvider == RoleplayAiProvider.gpt
+                  ? 'Prompt GPT: menu ⋮ → Vedi/Modifica Prompt'
+                  : 'Prompt Hetzner: menu ⋮ → Vedi/Modifica Prompt',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
+            ),
           ],
         ),
       ),

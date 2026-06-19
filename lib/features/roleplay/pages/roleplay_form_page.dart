@@ -31,6 +31,7 @@ class _PracticeRow {
 class _RoleplayFormPageState extends State<RoleplayFormPage> {
   final _titleCtrl = TextEditingController();
   final _promptCtrl = TextEditingController();
+  final _gptPromptCtrl = TextEditingController();
 
   late String _category;
   late String _aiProvider;
@@ -43,6 +44,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
     final sim = widget.simulation;
     _titleCtrl.text = sim.title;
     _promptCtrl.text = sim.prompt;
+    _gptPromptCtrl.text = sim.gptPrompt;
     _category =
         sim.category == 'Recupero' ? 'Recupero' : 'Sollecito';
     _aiProvider = sim.aiProvider;
@@ -65,6 +67,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
   void dispose() {
     _titleCtrl.dispose();
     _promptCtrl.dispose();
+    _gptPromptCtrl.dispose();
     for (final row in _practiceRows) {
       row.dispose();
     }
@@ -118,6 +121,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
         title: title,
         category: _category,
         prompt: _promptCtrl.text.trim(),
+        gptPrompt: _gptPromptCtrl.text.trim(),
         practiceData: _formattedPracticeData(),
         aiProvider: _aiProvider,
       );
@@ -237,14 +241,10 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
               ),
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _promptCtrl,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Prompt',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
+            RoleplayAiProvider.promptEditor(
+              aiProvider: _aiProvider,
+              hetznerPrompt: _promptCtrl,
+              gptPrompt: _gptPromptCtrl,
             ),
           ],
         ),

@@ -64,14 +64,27 @@ class _RoleplayPageState extends State<RoleplayPage>
   }
 
   Future<void> _showPromptDialog(RoleplaySimulation simulation) async {
-    final promptCtrl = TextEditingController(text: simulation.prompt);
+    final field =
+        RoleplayAiProvider.promptFirestoreField(simulation.aiProvider);
+    final promptCtrl = TextEditingController(
+      text: RoleplayAiProvider.readPrompt(
+        {
+          'prompt': simulation.prompt,
+          'gptPrompt': simulation.gptPrompt,
+          'aiProvider': simulation.aiProvider,
+        },
+        simulation.aiProvider,
+      ),
+    );
     var saving = false;
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('Prompt - ${simulation.title}'),
+          title: Text(
+            '${RoleplayAiProvider.promptFieldLabel(simulation.aiProvider)} - ${simulation.title}',
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: TextField(
@@ -94,8 +107,9 @@ class _RoleplayPageState extends State<RoleplayPage>
                   : () async {
                       setDialogState(() => saving = true);
                       try {
-                        await RoleplayService.instance.updatePrompt(
+                        await RoleplayService.instance.updatePromptField(
                           simulation.id,
+                          field,
                           promptCtrl.text.trim(),
                         );
                         if (!dialogContext.mounted) return;
