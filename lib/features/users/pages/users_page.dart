@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/subscription/subscription_admin_helper.dart';
 import '../../../models/app_user.dart';
 import '../../../services/firebase/users_service.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -128,6 +129,23 @@ class _UserList extends StatelessWidget {
             itemCount: users.length,
             itemBuilder: (context, index) {
               final user = users[index];
+              if (type == 'public') {
+                return FutureBuilder<SubscriptionCardInfo>(
+                  future: SubscriptionAdminHelper.loadPublicUsage(user.id),
+                  builder: (context, subSnap) {
+                    return UserCard(
+                      user: user,
+                      subscriptionInfo: subSnap.data,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserDetailPage(userId: user.id),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
               return FutureBuilder(
                 future: UsersService.instance.getCompany(user.companyId),
                 builder: (context, companySnap) {

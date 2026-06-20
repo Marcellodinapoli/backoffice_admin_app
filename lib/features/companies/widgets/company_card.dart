@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/subscription/subscription_admin_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/company.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../../shared/widgets/subscription_card_summary.dart';
 
 class CompanyCard extends StatelessWidget {
   final Company company;
   final String? linkedStatus;
+  final SubscriptionCardInfo? subscriptionInfo;
   final VoidCallback onTap;
 
   const CompanyCard({
     super.key,
     required this.company,
     this.linkedStatus,
+    this.subscriptionInfo,
     required this.onTap,
   });
 
@@ -72,6 +76,10 @@ class CompanyCard extends StatelessWidget {
                           color: AppColors.textMuted,
                         ),
                       ),
+                    ],
+                    if (subscriptionInfo != null) ...[
+                      const SizedBox(height: 10),
+                      SubscriptionCardSummary(info: subscriptionInfo!),
                     ],
                   ],
                 ),

@@ -14,6 +14,13 @@ class Company {
   final String? blockedReason;
   final Timestamp? blockedAt;
   final Timestamp? activatedAt;
+  final String? subscriptionPlan;
+  final bool lifetimeAccess;
+  final Timestamp? subscriptionExpiresAt;
+  final Timestamp? subscriptionCancelledAt;
+  final String? subscriptionStatus;
+  final int? collaboratorLimit;
+  final int? activeWorkUsers;
 
   const Company({
     required this.id,
@@ -29,6 +36,13 @@ class Company {
     this.blockedReason,
     this.blockedAt,
     this.activatedAt,
+    this.subscriptionPlan,
+    this.lifetimeAccess = false,
+    this.subscriptionExpiresAt,
+    this.subscriptionCancelledAt,
+    this.subscriptionStatus,
+    this.collaboratorLimit,
+    this.activeWorkUsers,
   });
 
   factory Company.fromFirestore(DocumentSnapshot doc) {
@@ -47,6 +61,29 @@ class Company {
       blockedReason: data['blockedReason']?.toString(),
       blockedAt: data['blockedAt'] as Timestamp?,
       activatedAt: data['activatedAt'] as Timestamp?,
+      subscriptionPlan: data['subscriptionPlan']?.toString(),
+      lifetimeAccess: data['lifetimeAccess'] == true,
+      subscriptionExpiresAt: data['subscriptionExpiresAt'] as Timestamp?,
+      subscriptionCancelledAt: data['subscriptionCancelledAt'] as Timestamp?,
+      subscriptionStatus: data['subscriptionStatus']?.toString(),
+      collaboratorLimit: _readIntOrNull(data['collaboratorLimit']),
+      activeWorkUsers: _readIntOrNull(data['activeWorkUsers']),
     );
   }
+
+  static int? _readIntOrNull(dynamic raw) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    return null;
+  }
+
+  Map<String, dynamic> toSubscriptionMap() => {
+        'subscriptionPlan': subscriptionPlan,
+        'lifetimeAccess': lifetimeAccess,
+        'subscriptionExpiresAt': subscriptionExpiresAt,
+        'subscriptionCancelledAt': subscriptionCancelledAt,
+        'subscriptionStatus': subscriptionStatus,
+        'collaboratorLimit': collaboratorLimit,
+        'activeWorkUsers': activeWorkUsers,
+      };
 }
