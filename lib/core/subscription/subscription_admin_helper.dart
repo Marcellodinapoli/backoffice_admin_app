@@ -131,9 +131,16 @@ abstract final class SubscriptionAdminHelper {
     var maxUsed = 0;
     var maxLimit = 1;
     for (final entry in limits.entries) {
-      final used = entry.key == 'activeCourses'
-          ? await _countActiveCourses(userId)
-          : _readInt(counts[entry.key]);
+      int used;
+      if (entry.key == 'activeCourses') {
+        try {
+          used = await _countActiveCourses(userId);
+        } catch (_) {
+          used = _readInt(counts[entry.key]);
+        }
+      } else {
+        used = _readInt(counts[entry.key]);
+      }
       if (entry.value <= 0) continue;
       if (used > maxUsed || (used / entry.value) > (maxUsed / maxLimit)) {
         maxUsed = used;

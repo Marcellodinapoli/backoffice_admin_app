@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/subscription/subscription_admin_helper.dart';
@@ -88,7 +89,7 @@ class _UsersPageState extends State<UsersPage>
   }
 }
 
-class _UserList extends StatelessWidget {
+class _UserList extends StatefulWidget {
   final String type;
   final String query;
   final List<AppUser> Function(List<AppUser>) filter;
@@ -100,9 +101,41 @@ class _UserList extends StatelessWidget {
   });
 
   @override
+  State<_UserList> createState() => _UserListState();
+}
+
+class _UserListState extends State<_UserList> {
+  final Map<String, Future<SubscriptionCardInfo>> _usageFutures = {};
+  final Map<String, Future<DocumentSnapshot<Map<String, dynamic>>?>>
+      _companyFutures = {};
+
+  Future<SubscriptionCardInfo> _loadPublicUsage(AppUser user) {
+    final fallback =
+        SubscriptionAdminHelper.fromPublicUserMap(user.subscriptionData);
+    return _usageFutures.putIfAbsent(
+      user.id,
+      () => SubscriptionAdminHelper.loadPublicUsage(user.id).catchError(
+        (_) => fallback,
+      ),
+    );
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _loadCompany(
+    String? companyId,
+  ) {
+    if (companyId == null) {
+      return Future.value(null);
+    }
+    return _companyFutures.putIfAbsent(
+      companyId,
+      () => UsersService.instance.getCompany(companyId),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AppUser>>(
-      stream: UsersService.instance.watchByType(type),
+      stream: UsersService.instance.watchByType(widget.type),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
@@ -112,13 +145,13 @@ class _UserList extends StatelessWidget {
           return ErrorView(message: 'Errore: ${snapshot.error}');
         }
 
-        final users = filter(snapshot.data ?? []);
+        final users = widget.filter(snapshot.data ?? []);
         if (users.isEmpty) {
           return EmptyState(
             icon: Icons.people_outline,
-            title: query.isEmpty
-                ? 'Nessun utente $type'
-                : 'Nessun risultato per "$query"',
+            title: widget.query.isEmpty
+                ? 'Nessun utente ${widget.type}'
+                : 'Nessun risultato per "${widget.query}"',
           );
         }
 
@@ -129,13 +162,16 @@ class _UserList extends StatelessWidget {
             itemCount: users.length,
             itemBuilder: (context, index) {
               final user = users[index];
-              if (type == 'public') {
+              if (widget.type == 'public') {
+                final baseInfo = SubscriptionAdminHelper.fromPublicUserMap(
+                  user.subscriptionData,
+                );
                 return FutureBuilder<SubscriptionCardInfo>(
-                  future: SubscriptionAdminHelper.loadPublicUsage(user.id),
+                  future: _loadPublicUsage(user),
                   builder: (context, subSnap) {
                     return UserCard(
                       user: user,
-                      subscriptionInfo: subSnap.data,
+                      subscriptionInfo: subSnap.data ?? baseInfo,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -146,8 +182,8 @@ class _UserList extends StatelessWidget {
                   },
                 );
               }
-              return FutureBuilder(
-                future: UsersService.instance.getCompany(user.companyId),
+              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                future: _loadCompany(user.companyId),
                 builder: (context, companySnap) {
                   String? companyName;
                   if (companySnap.hasData && companySnap.data != null) {

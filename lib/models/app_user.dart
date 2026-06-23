@@ -17,6 +17,11 @@ class AppUser {
   final Timestamp? lastLoginAt;
   final Timestamp? blockedAt;
   final Timestamp? standbyAt;
+  final String? subscriptionPlan;
+  final bool lifetimeAccess;
+  final Timestamp? subscriptionExpiresAt;
+  final String? subscriptionStatus;
+  final Timestamp? subscriptionCancelledAt;
 
   const AppUser({
     required this.id,
@@ -33,6 +38,11 @@ class AppUser {
     this.lastLoginAt,
     this.blockedAt,
     this.standbyAt,
+    this.subscriptionPlan,
+    this.lifetimeAccess = false,
+    this.subscriptionExpiresAt,
+    this.subscriptionStatus,
+    this.subscriptionCancelledAt,
   });
 
   factory AppUser.fromFirestore(DocumentSnapshot doc) {
@@ -54,8 +64,23 @@ class AppUser {
       lastLoginAt: data['lastLoginAt'] as Timestamp?,
       blockedAt: data['blockedAt'] as Timestamp?,
       standbyAt: data['standbyAt'] as Timestamp?,
+      subscriptionPlan: data['subscriptionPlan']?.toString(),
+      lifetimeAccess: data['lifetimeAccess'] == true,
+      subscriptionExpiresAt: data['subscriptionExpiresAt'] as Timestamp?,
+      subscriptionStatus: data['subscriptionStatus']?.toString(),
+      subscriptionCancelledAt: data['subscriptionCancelledAt'] as Timestamp?,
     );
   }
+
+  Map<String, dynamic> get subscriptionData => {
+        'subscriptionPlan': subscriptionPlan ?? 'free',
+        if (lifetimeAccess) 'lifetimeAccess': true,
+        if (subscriptionExpiresAt != null)
+          'subscriptionExpiresAt': subscriptionExpiresAt,
+        if (subscriptionStatus != null) 'subscriptionStatus': subscriptionStatus,
+        if (subscriptionCancelledAt != null)
+          'subscriptionCancelledAt': subscriptionCancelledAt,
+      };
 
   String get displayStatus =>
       UserAccountStatus.displayStatus(status, type: type);

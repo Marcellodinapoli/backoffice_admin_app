@@ -300,7 +300,9 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
-    return Column(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SectionHeader(
@@ -476,6 +478,7 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
               ),
         ),
       ],
+    ),
     );
   }
 }

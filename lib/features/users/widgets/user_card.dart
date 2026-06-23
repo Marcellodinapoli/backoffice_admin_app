@@ -77,7 +77,7 @@ class UserCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (subscriptionInfo != null) ...[
+                    if (user.type == 'public' && subscriptionInfo != null) ...[
                       const SizedBox(height: 10),
                       SubscriptionCardSummary(info: subscriptionInfo!),
                     ],
