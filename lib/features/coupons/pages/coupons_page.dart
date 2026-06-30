@@ -19,6 +19,7 @@ class _CouponsPageState extends State<CouponsPage> {
   DateTime? _expiresAt;
   DateTime? _benefitExpiresAt;
   String? _restrictedPlan;
+  String _targetAudience = 'users';
   bool _saving = false;
   String? _formError;
 
@@ -91,6 +92,7 @@ class _CouponsPageState extends State<CouponsPage> {
         expiresAt: _expiresAt,
         benefitExpiresAt: _benefitExpiresAt!,
         restrictedPlan: _restrictedPlan,
+        targetAudience: _targetAudience,
       );
       if (!mounted) return;
       _codeCtrl.clear();
@@ -100,6 +102,7 @@ class _CouponsPageState extends State<CouponsPage> {
         _expiresAt = null;
         _benefitExpiresAt = null;
         _restrictedPlan = null;
+        _targetAudience = 'users';
         _saving = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -184,6 +187,21 @@ class _CouponsPageState extends State<CouponsPage> {
               decoration: const InputDecoration(
                 labelText: 'Utilizzi massimi (vuoto = illimitati)',
                 border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: _targetAudience,
+              decoration: const InputDecoration(
+                labelText: 'Destinatario *',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'users', child: Text('Utenti')),
+                DropdownMenuItem(value: 'companies', child: Text('Aziende')),
+              ],
+              onChanged: (v) => setState(
+                () => _targetAudience = v ?? 'users',
               ),
             ),
             const SizedBox(height: 10),
@@ -330,6 +348,11 @@ class _CouponTile extends StatelessWidget {
             : record.exhausted
                 ? 'Esaurito'
                 : 'Attivo';
+    final statusColor = status == 'Scaduto'
+        ? Colors.red
+        : status == 'Attivo'
+            ? Colors.green
+            : AppColors.textSecondary;
 
     return Card(
       child: Padding(
@@ -356,7 +379,13 @@ class _CouponTile extends StatelessWidget {
                 ),
               ],
             ),
-            Text(status),
+            Text(
+              status,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             if (record.createdAt != null)
               Text('Creato il: ${_formatDate(record.createdAt!)}'),
             if (record.label != null) Text('Nota: ${record.label}'),

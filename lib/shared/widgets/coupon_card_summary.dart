@@ -30,6 +30,11 @@ class CouponCardSummary extends StatelessWidget {
           couponBenefitExpiresAt: details.benefitExpiresAt,
           couponLifetimeFree: details.lifetimeFree,
         );
+        final expired = CouponDisplayHelper.isCouponBenefitExpired(
+          subscriptionExpiresAt: subscriptionExpiresAt,
+          couponBenefitExpiresAt: details.benefitExpiresAt,
+          couponLifetimeFree: details.lifetimeFree,
+        );
 
         return Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -59,6 +64,15 @@ class CouponCardSummary extends StatelessWidget {
                   color: AppColors.textMuted,
                 ),
               ),
+              if (expired)
+                const Text(
+                  'Scaduto',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
             ],
           ),
         );
