@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/subscription/subscription_admin_helper.dart';
 import '../../../models/company.dart';
 import '../../../services/firebase/companies_service.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -78,9 +77,7 @@ class _CompaniesPageState extends State<CompaniesPage> {
               if (companies.isEmpty) {
                 return EmptyState(
                   icon: Icons.business_outlined,
-                  title: _query.isEmpty
-                      ? 'Nessuna azienda'
-                      : 'Nessun risultato',
+                  title: _query.isEmpty ? 'Nessuna azienda' : 'Nessun risultato',
                 );
               }
 
@@ -96,9 +93,6 @@ class _CompaniesPageState extends State<CompaniesPage> {
                       return CompanyCard(
                         company: company,
                         linkedStatus: statusSnap.data,
-                        subscriptionInfo: SubscriptionAdminHelper.fromCompanyMap(
-                          company.toSubscriptionMap(),
-                        ),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(

@@ -42,6 +42,27 @@ class CompaniesService {
         .map((snap) => snap.docs.map(AppUser.fromFirestore).toList());
   }
 
+  /// Conta i collaboratori work collegati (stessa logica del dettaglio azienda).
+  Future<int> countLinkedWorkUsers({
+    required String companyId,
+    String? companyCode,
+  }) async {
+    if (companyCode != null && companyCode.isNotEmpty) {
+      final byCode = await _fs
+          .collection(FirestoreCollections.users)
+          .where('companyCode', isEqualTo: companyCode)
+          .get();
+      if (byCode.size > 0) return byCode.size;
+    }
+
+    final byId = await _fs
+        .collection(FirestoreCollections.users)
+        .where('companyId', isEqualTo: companyId)
+        .where('type', isEqualTo: 'work')
+        .get();
+    return byId.size;
+  }
+
   Future<void> blockCompany(
     String companyId,
     String companyCode,

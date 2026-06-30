@@ -3,20 +3,18 @@ import 'package:flutter/material.dart';
 import '../../../core/subscription/subscription_admin_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/company.dart';
+import '../../../shared/widgets/coupon_card_summary.dart';
 import '../../../shared/widgets/status_badge.dart';
-import '../../../shared/widgets/subscription_card_summary.dart';
 
 class CompanyCard extends StatelessWidget {
   final Company company;
   final String? linkedStatus;
-  final SubscriptionCardInfo? subscriptionInfo;
   final VoidCallback onTap;
 
   const CompanyCard({
     super.key,
     required this.company,
     this.linkedStatus,
-    this.subscriptionInfo,
     required this.onTap,
   });
 
@@ -77,10 +75,20 @@ class CompanyCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (subscriptionInfo != null) ...[
-                      const SizedBox(height: 10),
-                      SubscriptionCardSummary(info: subscriptionInfo!),
-                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Piano: ${SubscriptionAdminHelper.planLabel(company.subscriptionPlan)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    CouponCardSummary(
+                      entityId: company.id,
+                      couponCode: company.couponCode,
+                      subscriptionExpiresAt: company.subscriptionExpiresAt,
+                    ),
                   ],
                 ),
               ),

@@ -21,6 +21,7 @@ class Company {
   final String? subscriptionStatus;
   final int? collaboratorLimit;
   final int? activeWorkUsers;
+  final String? couponCode;
 
   const Company({
     required this.id,
@@ -43,6 +44,7 @@ class Company {
     this.subscriptionStatus,
     this.collaboratorLimit,
     this.activeWorkUsers,
+    this.couponCode,
   });
 
   factory Company.fromFirestore(DocumentSnapshot doc) {
@@ -68,6 +70,7 @@ class Company {
       subscriptionStatus: data['subscriptionStatus']?.toString(),
       collaboratorLimit: _readIntOrNull(data['collaboratorLimit']),
       activeWorkUsers: _readIntOrNull(data['activeWorkUsers']),
+      couponCode: data['couponCode']?.toString(),
     );
   }
 

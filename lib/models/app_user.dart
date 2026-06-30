@@ -22,6 +22,7 @@ class AppUser {
   final Timestamp? subscriptionExpiresAt;
   final String? subscriptionStatus;
   final Timestamp? subscriptionCancelledAt;
+  final String? couponCode;
 
   const AppUser({
     required this.id,
@@ -43,6 +44,7 @@ class AppUser {
     this.subscriptionExpiresAt,
     this.subscriptionStatus,
     this.subscriptionCancelledAt,
+    this.couponCode,
   });
 
   factory AppUser.fromFirestore(DocumentSnapshot doc) {
@@ -69,6 +71,7 @@ class AppUser {
       subscriptionExpiresAt: data['subscriptionExpiresAt'] as Timestamp?,
       subscriptionStatus: data['subscriptionStatus']?.toString(),
       subscriptionCancelledAt: data['subscriptionCancelledAt'] as Timestamp?,
+      couponCode: data['couponCode']?.toString(),
     );
   }
 

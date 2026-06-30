@@ -1,3 +1,4 @@
+import 'package:credit_calc_core/credit_calc_core.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/admin_login_page.dart';
@@ -5,6 +6,7 @@ import '../backoffice_web_pages/bk_community_page.dart';
 import '../backoffice_web_pages/bk_costs_page.dart';
 import '../backoffice_web_pages/bk_security_page.dart';
 import '../backoffice_web_pages/bk_support_page.dart';
+import '../core/subscription/plan_limits_refresh.dart';
 import '../core/theme/app_colors.dart';
 import '../features/companies/pages/companies_page.dart';
 import '../features/courses/pages/courses_page.dart';
@@ -14,6 +16,7 @@ import '../features/notifications/pages/notifications_page.dart';
 import '../features/roleplay/pages/roleplay_page.dart';
 import '../features/consents/pages/versioned_consent_page.dart';
 import '../features/coupons/pages/coupons_page.dart';
+import '../features/plans/pages/plans_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
@@ -47,6 +50,7 @@ class _AdminShellState extends State<AdminShell> {
     BkCommunityPage(),
     BkSupportPage(),
     CouponsPage(),
+    PlansPage(),
     BkCostsPage(),
     BkSecurityPage(),
     SettingsPage(),
@@ -101,7 +105,14 @@ class _AdminShellState extends State<AdminShell> {
       ),
       drawer: AdminDrawer(
         selectedIndex: safeIndex,
-        onSelect: (i) => setState(() => _index = i),
+        onSelect: (i) {
+          setState(() => _index = i);
+          if (i == 1 || i == 2) {
+            PublicPlanLimitsConfigService.ensureLoaded().then((_) {
+              PlanLimitsRefresh.bump();
+            });
+          }
+        },
       ),
       body: SafeArea(
         top: false,

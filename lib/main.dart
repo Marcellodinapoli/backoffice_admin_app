@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:credit_calc_core/credit_calc_core.dart';
 
 import 'app.dart';
+import 'core/subscription/plan_limits_refresh.dart';
 import 'firebase_options.dart';
 import 'utils/bk_local_storage_mobile.dart' as storage;
 
@@ -16,6 +18,9 @@ Future<void> main() async {
     if (e.code != 'duplicate-app') rethrow;
   }
   await storage.bkLocalStorageInit();
+  PublicPlanLimitsConfigService.start();
+  await PublicPlanLimitsConfigService.ensureLoaded();
+  PlanLimitsRefresh.start();
 
   runApp(const BackOfficeAdminApp());
 }

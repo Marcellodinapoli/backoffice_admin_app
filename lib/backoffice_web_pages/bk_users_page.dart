@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/subscription/plan_limits_refresh.dart';
+import '../core/subscription/subscription_admin_helper.dart';
 import '../core/constants/user_account_status.dart';
+import '../../shared/widgets/coupon_card_summary.dart';
 import 'bk_user_details_page.dart';
 
 class BkUsersPage extends StatefulWidget {
@@ -89,7 +92,10 @@ class _UserList extends StatelessWidget {
         .where('type', isEqualTo: userType)
         .snapshots();
 
-    return StreamBuilder<QuerySnapshot>(
+    return ListenableBuilder(
+      listenable: PlanLimitsRefresh.revision,
+      builder: (context, _) {
+        return StreamBuilder<QuerySnapshot>(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -125,6 +131,11 @@ class _UserList extends StatelessWidget {
             final workRole = user['workRole'];
             final companyId = user['companyId'];
             final lastLoginAt = user['lastLoginAt'];
+            final planLine =
+                SubscriptionAdminHelper.publicUserListPlanLineFromData(
+              user,
+              type: userType,
+            );
 
             return Padding(
               padding:
@@ -176,6 +187,25 @@ class _UserList extends StatelessWidget {
                           fontSize: 14,
                         ),
                       ),
+                    if (planLine != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        planLine,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: planLine == 'Senza limiti'
+                              ? const Color(0xFF2E7D32)
+                              : Colors.grey.shade800,
+                        ),
+                      ),
+                    ],
+                    CouponCardSummary(
+                      entityId: userId,
+                      couponCode: user['couponCode']?.toString(),
+                      subscriptionExpiresAt:
+                          user['subscriptionExpiresAt'] as Timestamp?,
+                    ),
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: userType == "work"
@@ -260,6 +290,8 @@ class _UserList extends StatelessWidget {
             );
           },
         );
+      },
+    );
       },
     );
   }

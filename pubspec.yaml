@@ -14,17 +14,20 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # Firebase
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
-  cloud_firestore: ^4.15.8
-  firebase_messaging: ^14.7.10
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
+  firebase_messaging: ^16.1.1
+
+  credit_calc_core:
+    path: ../creditplanet/packages/credit_calc_core
 
   # Biometria
   local_auth: ^2.3.0
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.3.3
   intl: ^0.19.0
-  web: ^0.5.1
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

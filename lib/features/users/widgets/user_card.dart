@@ -3,25 +3,27 @@ import 'package:flutter/material.dart';
 import '../../../core/subscription/subscription_admin_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/app_user.dart';
+import '../../../shared/widgets/coupon_card_summary.dart';
 import '../../../shared/widgets/status_badge.dart';
-import '../../../shared/widgets/subscription_card_summary.dart';
 
 class UserCard extends StatelessWidget {
   final AppUser user;
   final String? companyName;
-  final SubscriptionCardInfo? subscriptionInfo;
   final VoidCallback onTap;
 
   const UserCard({
     super.key,
     required this.user,
     this.companyName,
-    this.subscriptionInfo,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final planLine = user.type == 'public'
+        ? 'Piano: ${SubscriptionAdminHelper.planLabel(user.subscriptionPlan)}'
+        : null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -77,10 +79,22 @@ class UserCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (user.type == 'public' && subscriptionInfo != null) ...[
-                      const SizedBox(height: 10),
-                      SubscriptionCardSummary(info: subscriptionInfo!),
+                    if (planLine != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        planLine,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
+                    CouponCardSummary(
+                      entityId: user.id,
+                      couponCode: user.couponCode,
+                      subscriptionExpiresAt: user.subscriptionExpiresAt,
+                    ),
                   ],
                 ),
               ),
