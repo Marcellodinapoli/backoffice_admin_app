@@ -13,21 +13,26 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
 
     steps:
       - name: Checkout backoffice_admin_app
         uses: actions/checkout@v4
+        with:
+          path: app
 
       - name: Checkout credit_calc_core (credit-calc-store)
         uses: actions/checkout@v4
         with:
           repository: Marcellodinapoli/credit-calc-store
-          path: ../creditplanet
+          path: creditplanet
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - uses: subosito/flutter-action@v2
         with:
@@ -40,7 +45,7 @@ jobs:
           flutter pub get
           cd ../creditplanet/packages/credit_calc_core
           flutter pub get
-          cd -
+          cd "$GITHUB_WORKSPACE/app"
           flutter build web --release --no-wasm-dry-run
           test -f build/web/index.html
 
