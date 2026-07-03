@@ -1,0 +1,63 @@
+# Build APK Android e carica artifact scaricabile da GitHub Actions.
+# Dipendenza locale: checkout credit-calc-store come ../creditplanet
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout backoffice_admin_app
+        uses: actions/checkout@v4
+
+      - name: Checkout credit_calc_core (credit-calc-store)
+        uses: actions/checkout@v4
+        with:
+          repository: Marcellodinapoli/credit-calc-store
+          path: ../creditplanet
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: |
+          flutter pub get
+          cd ../creditplanet/packages/credit_calc_core
+          flutter pub get
+
+      - name: Build release APK (arm64)
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Rename APK
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/BackOfficeAdmin-${VERSION}-android-arm64.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackOfficeAdmin-Android
+          path: dist/BackOfficeAdmin-*-android-arm64.apk
+          retention-days: 30
