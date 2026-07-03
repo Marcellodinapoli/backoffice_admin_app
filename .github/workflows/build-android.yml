@@ -43,7 +43,6 @@ jobs:
         with:
           channel: stable
           cache: true
-          cache-key: flutter-${{ runner.os }}-${{ hashFiles('app/pubspec.lock', 'creditplanet/packages/credit_calc_core/pubspec.lock') }}
 
       - name: Flutter pub get
         run: |
