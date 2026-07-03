@@ -13,6 +13,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     defaults:
       run:
         working-directory: app
@@ -52,7 +55,16 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli@latest
 
+      - name: Verifica secrets Netlify
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN mancante. GitHub → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          if [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error::NETLIFY_SITE_ID mancante. GitHub → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
       - name: Deploy to Netlify
-        run: netlify deploy --prod --dir=build/web --site=${{ secrets.NETLIFY_SITE_ID }}
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: netlify deploy --prod --dir=build/web --auth="$NETLIFY_AUTH_TOKEN" --site="$NETLIFY_SITE_ID"
