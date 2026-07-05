@@ -1,82 +1,37 @@
 import 'package:flutter/material.dart';
 
-/// Motore AI roleplay configurabile per simulazione (Firestore `aiProvider`).
+/// Motore AI roleplay: solo OpenAI (Cloud Function `roleplayStep`).
 abstract final class RoleplayAiProvider {
-  static const hetzner = 'hetzner';
-  static const gpt = 'gpt';
+  static const openAi = 'gpt';
 
-  static String read(Map<String, dynamic> data) {
-    final value =
-        (data['aiProvider'] ?? hetzner).toString().toLowerCase().trim();
-    return value == gpt ? gpt : hetzner;
-  }
+  static String read(Map<String, dynamic> data) => openAi;
 
-  static String label(String provider) =>
-      provider == gpt ? 'GPT-4o mini' : 'Hetzner';
+  static String label(String provider) => 'OpenAI';
 
   static String readPrompt(Map<String, dynamic> data, [String? provider]) {
-    final engine = provider ?? read(data);
-    if (engine == gpt) {
-      return (data['gptPrompt'] ?? '').toString();
-    }
-    return (data['prompt'] ?? '').toString();
+    final prompt = (data['prompt'] ?? '').toString().trim();
+    if (prompt.isNotEmpty) return prompt;
+    return (data['gptPrompt'] ?? '').toString();
   }
 
-  static String promptFirestoreField(String provider) =>
-      provider == gpt ? 'gptPrompt' : 'prompt';
+  static String promptFirestoreField(String provider) => 'prompt';
 
-  static String promptFieldLabel(String provider) =>
-      provider == gpt ? 'Prompt GPT' : 'Prompt Hetzner';
+  static String promptFieldLabel(String provider) => 'Prompt OpenAI';
 
   static Widget promptEditor({
     required String aiProvider,
     required TextEditingController hetznerPrompt,
     required TextEditingController gptPrompt,
   }) {
-    if (aiProvider == gpt) {
-      return TextField(
-        controller: gptPrompt,
-        maxLines: 5,
-        decoration: const InputDecoration(
-          labelText: 'Prompt GPT',
-          hintText: 'Istruzioni dedicate a GPT-4o mini per questa simulazione',
-          border: OutlineInputBorder(),
-          alignLabelWithHint: true,
-        ),
-      );
-    }
-
     return TextField(
       controller: hetznerPrompt,
-      maxLines: 5,
+      maxLines: 8,
       decoration: const InputDecoration(
-        labelText: 'Prompt Hetzner',
+        labelText: 'Prompt OpenAI',
+        hintText: 'Istruzioni per il debitore simulato',
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
       ),
-    );
-  }
-
-  static Widget selector({
-    required String current,
-    required ValueChanged<String> onChanged,
-  }) {
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(
-          value: hetzner,
-          label: Text('Hetzner'),
-          icon: Icon(Icons.dns_outlined, size: 18),
-        ),
-        ButtonSegment(
-          value: gpt,
-          label: Text('GPT'),
-          icon: Icon(Icons.auto_awesome_outlined, size: 18),
-        ),
-      ],
-      selected: {current},
-      onSelectionChanged: (selection) => onChanged(selection.first),
-      showSelectedIcon: false,
     );
   }
 }

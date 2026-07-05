@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/roleplay/roleplay_config_service.dart';
 import '../../../core/utils/roleplay_ai_provider.dart';
 import '../../../models/roleplay_simulation.dart';
 
 class RoleplayCard extends StatelessWidget {
   final RoleplaySimulation simulation;
-  final ValueChanged<String>? onAiProviderChanged;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onViewPrompt;
@@ -14,7 +14,6 @@ class RoleplayCard extends StatelessWidget {
   const RoleplayCard({
     super.key,
     required this.simulation,
-    this.onAiProviderChanged,
     this.onEdit,
     this.onDelete,
     this.onViewPrompt,
@@ -89,6 +88,16 @@ class RoleplayCard extends StatelessWidget {
                 color: AppColors.textMuted,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Difficoltà: ${RoleplayConfigService.difficultyLabel(simulation.difficulty)}'
+              ' • Personalità: '
+              '${RoleplayConfigService.personalityLabel(simulation.personality)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
             if (simulation.practiceData.isNotEmpty) ...[
               const SizedBox(height: 8),
               ...simulation.practiceData.take(2).map(
@@ -103,25 +112,18 @@ class RoleplayCard extends StatelessWidget {
                     ),
                   ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
-              'Motore AI su Planet: ${RoleplayAiProvider.label(simulation.aiProvider)}',
+              'Motore AI: ${RoleplayAiProvider.label(simulation.aiProvider)}',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 8),
-            RoleplayAiProvider.selector(
-              current: simulation.aiProvider,
-              onChanged: onAiProviderChanged ?? (_) {},
-            ),
-            const SizedBox(height: 8),
-            Text(
-              simulation.aiProvider == RoleplayAiProvider.gpt
-                  ? 'Prompt GPT: menu ⋮ → Vedi/Modifica Prompt'
-                  : 'Prompt Hetzner: menu ⋮ → Vedi/Modifica Prompt',
-              style: const TextStyle(
+            const SizedBox(height: 4),
+            const Text(
+              'Prompt: menu ⋮ → Vedi/Modifica Prompt',
+              style: TextStyle(
                 fontSize: 11,
                 color: AppColors.textMuted,
               ),

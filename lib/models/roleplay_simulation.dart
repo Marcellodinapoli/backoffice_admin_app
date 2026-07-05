@@ -1,4 +1,5 @@
 import '../core/utils/roleplay_ai_provider.dart';
+import '../core/roleplay/roleplay_config_service.dart';
 
 class RoleplaySimulation {
   final String id;
@@ -10,6 +11,8 @@ class RoleplaySimulation {
   final List<Map<String, dynamic>> practiceData;
   final String date;
   final String aiProvider;
+  final String difficulty;
+  final String personality;
 
   const RoleplaySimulation({
     required this.id,
@@ -20,7 +23,9 @@ class RoleplaySimulation {
     this.audioUrl,
     this.practiceData = const [],
     required this.date,
-    this.aiProvider = RoleplayAiProvider.hetzner,
+    this.aiProvider = RoleplayAiProvider.openAi,
+    this.difficulty = RoleplayConfigService.defaultDifficulty,
+    this.personality = RoleplayConfigService.defaultPersonality,
   });
 
   factory RoleplaySimulation.fromFirestore(String id, Map<String, dynamic> data) {
@@ -39,6 +44,8 @@ class RoleplaySimulation {
       practiceData: practice,
       date: data['date']?.toString() ?? '',
       aiProvider: RoleplayAiProvider.read(data),
+      difficulty: RoleplayConfigService.resolveDifficulty(data),
+      personality: RoleplayConfigService.resolvePersonality(data),
     );
   }
 }

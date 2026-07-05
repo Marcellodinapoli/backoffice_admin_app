@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/roleplay_ai_provider.dart';
+import '../../../core/roleplay/roleplay_config_service.dart';
 import '../../../models/roleplay_simulation.dart';
 import '../../../services/firebase/roleplay_service.dart';
 
@@ -31,10 +31,10 @@ class _PracticeRow {
 class _RoleplayFormPageState extends State<RoleplayFormPage> {
   final _titleCtrl = TextEditingController();
   final _promptCtrl = TextEditingController();
-  final _gptPromptCtrl = TextEditingController();
 
   late String _category;
-  late String _aiProvider;
+  late String _difficulty;
+  late String _personality;
   final List<_PracticeRow> _practiceRows = [];
   bool _saving = false;
 
@@ -43,11 +43,14 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
     super.initState();
     final sim = widget.simulation;
     _titleCtrl.text = sim.title;
-    _promptCtrl.text = sim.prompt;
-    _gptPromptCtrl.text = sim.gptPrompt;
+    _promptCtrl.text = RoleplayConfigService.resolveSimulationPrompt({
+      'prompt': sim.prompt,
+      'gptPrompt': sim.gptPrompt,
+    });
     _category =
         sim.category == 'Recupero' ? 'Recupero' : 'Sollecito';
-    _aiProvider = sim.aiProvider;
+    _difficulty = sim.difficulty;
+    _personality = sim.personality;
 
     if (sim.practiceData.isEmpty) {
       _practiceRows.add(_PracticeRow());
@@ -67,7 +70,6 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
   void dispose() {
     _titleCtrl.dispose();
     _promptCtrl.dispose();
-    _gptPromptCtrl.dispose();
     for (final row in _practiceRows) {
       row.dispose();
     }
@@ -121,9 +123,9 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
         title: title,
         category: _category,
         prompt: _promptCtrl.text.trim(),
-        gptPrompt: _gptPromptCtrl.text.trim(),
         practiceData: _formattedPracticeData(),
-        aiProvider: _aiProvider,
+        difficulty: _difficulty,
+        personality: _personality,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -173,22 +175,54 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
               },
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Motore AI (Planet)',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            RoleplayAiProvider.selector(
-              current: _aiProvider,
-              onChanged: (value) => setState(() => _aiProvider = value),
-            ),
-            const SizedBox(height: 16),
             TextField(
               controller: _titleCtrl,
               decoration: const InputDecoration(
                 labelText: 'Titolo',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: RoleplayConfigService.difficulties.contains(_difficulty)
+                  ? _difficulty
+                  : RoleplayConfigService.defaultDifficulty,
+              decoration: const InputDecoration(
+                labelText: 'Difficoltà',
+                border: OutlineInputBorder(),
+              ),
+              items: RoleplayConfigService.difficulties
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(RoleplayConfigService.difficultyLabel(item)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _difficulty = value);
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: RoleplayConfigService.personalities.contains(_personality)
+                  ? _personality
+                  : RoleplayConfigService.defaultPersonality,
+              decoration: const InputDecoration(
+                labelText: 'Personalità',
+                border: OutlineInputBorder(),
+              ),
+              items: RoleplayConfigService.personalities
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(RoleplayConfigService.personalityLabel(item)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _personality = value);
+              },
             ),
             const SizedBox(height: 20),
             const Text(
@@ -241,10 +275,16 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
               ),
             ),
             const SizedBox(height: 8),
-            RoleplayAiProvider.promptEditor(
-              aiProvider: _aiProvider,
-              hetznerPrompt: _promptCtrl,
-              gptPrompt: _gptPromptCtrl,
+            TextField(
+              controller: _promptCtrl,
+              minLines: 14,
+              maxLines: 28,
+              decoration: const InputDecoration(
+                labelText: 'Prompt OpenAI',
+                hintText: 'Istruzioni per il debitore simulato',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
             ),
           ],
         ),

@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../services/firebase/ai_usage_service.dart';
 import '../../services/firebase/platform_costs_service.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/section_header.dart';
+
+String _formatCount(int value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  }
+  if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
+  return value.toString();
+}
 
 class BkCostsPage extends StatefulWidget {
   const BkCostsPage({super.key});
@@ -65,80 +74,93 @@ class _BkCostsPageState extends State<BkCostsPage> {
         Expanded(
           child: StreamBuilder<PlatformMonthCosts>(
             stream: PlatformCostsService.watchMonth(_selectedMonthKey),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const LoadingView();
-              }
+            builder: (context, costsSnapshot) {
+              return StreamBuilder<AiMonthUsage>(
+                stream: AiUsageService.watchMonth(_selectedMonthKey),
+                builder: (context, aiSnapshot) {
+                  if (!costsSnapshot.hasData) {
+                    return const LoadingView();
+                  }
 
-              final costs = snapshot.data ?? const PlatformMonthCosts();
-              final total = costs.total();
+                  final costs =
+                      costsSnapshot.data ?? const PlatformMonthCosts();
+                  final aiUsage = aiSnapshot.data ?? const AiMonthUsage();
+                  final openAiAmount = _openAiAmount(costs, aiUsage);
+                  final total = costs.costBunny() +
+                      costs.costHetzner() +
+                      openAiAmount +
+                      costs.costFirebase();
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                children: [
-                  Card(
-                    color: AppColors.infoBg,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Totale mese',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    children: [
+                      Card(
+                        color: AppColors.infoBg,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Totale mese',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                '€${total.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '€${total.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _PlatformCostCard(
-                    title: 'Bunny.net',
-                    icon: Icons.cloud_outlined,
-                    color: const Color(0xFFFF6F00),
-                    usage:
-                        'Storage: ${costs.bunnyStorageGb.toStringAsFixed(1)} GB · '
-                        'Traffico: ${costs.bunnyTrafficGb.toStringAsFixed(1)} GB',
-                    amount: costs.costBunny(),
-                    onEdit: () => _editPlatform(costs, _PlatformCostKind.bunny),
-                  ),
-                  _PlatformCostCard(
-                    title: 'Hetzner',
-                    icon: Icons.dns_outlined,
-                    color: const Color(0xFFD32F2F),
-                    usage:
-                        'Abbonamento €${costs.hetznerMonthlyEur.toStringAsFixed(2)}/mese',
-                    amount: costs.costHetzner(),
-                    onEdit: () => _editPlatform(costs, _PlatformCostKind.hetzner),
-                  ),
-                  _PlatformCostCard(
-                    title: 'OpenAI API',
-                    icon: Icons.auto_awesome_outlined,
-                    color: const Color(0xFF2E7D32),
-                    usage: 'Importo da dashboard OpenAI',
-                    amount: costs.costOpenAi(),
-                    onEdit: () => _editPlatform(costs, _PlatformCostKind.openai),
-                  ),
-                  _PlatformCostCard(
-                    title: 'Firebase',
-                    icon: Icons.local_fire_department_outlined,
-                    color: const Color(0xFFFF9800),
-                    usage:
-                        'Letture: ${_formatInt(costs.firebaseReads)} · '
-                        'Scritture: ${_formatInt(costs.firebaseWrites)} · '
-                        'Storage: ${(costs.firebaseStorageMb / 1024).toStringAsFixed(2)} GB',
-                    amount: costs.costFirebase(),
-                    onEdit: () => _editPlatform(costs, _PlatformCostKind.firebase),
-                  ),
-                ],
+                      const SizedBox(height: 12),
+                      _PlatformCostCard(
+                        title: 'Bunny.net',
+                        icon: Icons.cloud_outlined,
+                        color: const Color(0xFFFF6F00),
+                        usage:
+                            'Storage: ${costs.bunnyStorageGb.toStringAsFixed(1)} GB · '
+                            'Traffico: ${costs.bunnyTrafficGb.toStringAsFixed(1)} GB',
+                        amount: costs.costBunny(),
+                        onEdit: () =>
+                            _editPlatform(costs, _PlatformCostKind.bunny),
+                      ),
+                      _PlatformCostCard(
+                        title: 'Hetzner',
+                        icon: Icons.dns_outlined,
+                        color: const Color(0xFFD32F2F),
+                        usage:
+                            'Abbonamento €${costs.hetznerMonthlyEur.toStringAsFixed(2)}/mese',
+                        amount: costs.costHetzner(),
+                        onEdit: () =>
+                            _editPlatform(costs, _PlatformCostKind.hetzner),
+                      ),
+                      _OpenAiCostCard(
+                        aiUsage: aiUsage,
+                        amount: openAiAmount,
+                        manualInvoice: costs.openAiAmountEur,
+                        onEdit: () =>
+                            _editPlatform(costs, _PlatformCostKind.openai),
+                      ),
+                      _PlatformCostCard(
+                        title: 'Firebase',
+                        icon: Icons.local_fire_department_outlined,
+                        color: const Color(0xFFFF9800),
+                        usage:
+                            'Letture: ${_formatCount(costs.firebaseReads)} · '
+                            'Scritture: ${_formatCount(costs.firebaseWrites)} · '
+                            'Storage: ${(costs.firebaseStorageMb / 1024).toStringAsFixed(2)} GB',
+                        amount: costs.costFirebase(),
+                        onEdit: () =>
+                            _editPlatform(costs, _PlatformCostKind.firebase),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -147,12 +169,142 @@ class _BkCostsPageState extends State<BkCostsPage> {
     );
   }
 
-  String _formatInt(int value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
-    }
-    if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
-    return value.toString();
+  double _openAiAmount(PlatformMonthCosts costs, AiMonthUsage aiUsage) {
+    if (costs.openAiAmountEur > 0) return costs.openAiAmountEur;
+    return aiUsage.estimatedEur;
+  }
+}
+
+class _OpenAiCostCard extends StatelessWidget {
+  final AiMonthUsage aiUsage;
+  final double amount;
+  final double manualInvoice;
+  final VoidCallback onEdit;
+
+  const _OpenAiCostCard({
+    required this.aiUsage,
+    required this.amount,
+    required this.manualInvoice,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF2E7D32);
+    final hasUsage = aiUsage.totalCalls > 0;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.12),
+                  child: const Icon(
+                    Icons.auto_awesome_outlined,
+                    color: color,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'OpenAI API',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Fattura reale OpenAI',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (hasUsage) ...[
+              Text(
+                '${aiUsage.totalCalls} chiamate · '
+                '${_formatCount(aiUsage.totalTokens)} token'
+                '${aiUsage.totalWhisperSeconds > 0 ? ' · Whisper ${(aiUsage.totalWhisperSeconds / 60).toStringAsFixed(1)} min' : ''}',
+                style: const TextStyle(fontSize: 12, height: 1.35),
+              ),
+              const SizedBox(height: 8),
+              ...AiMonthUsage.featureOrder.map((key) {
+                final feature = aiUsage.features[key];
+                if (feature == null || feature.calls == 0) {
+                  return const SizedBox.shrink();
+                }
+                final label = AiMonthUsage.featureLabels[key] ?? key;
+                final whisper = feature.whisperSeconds > 0
+                    ? ' · Whisper ${(feature.whisperSeconds / 60).toStringAsFixed(1)} min'
+                    : '';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '$label: ${feature.calls} ch · '
+                    '${feature.totalTokens} token$whisper',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.3,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                );
+              }),
+              if (aiUsage.updatedAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Aggiornato ${_formatTime(aiUsage.updatedAt!)} · live',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ] else
+              Text(
+                'Nessun consumo registrato questo mese',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              manualInvoice > 0
+                  ? '€${amount.toStringAsFixed(2)} (fattura reale)'
+                  : '€${amount.toStringAsFixed(2)} (stima automatica)',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            if (manualInvoice > 0 &&
+                (aiUsage.estimatedEur - manualInvoice).abs() > 0.01)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Stima automatica: €${aiUsage.estimatedEur.toStringAsFixed(2)}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime value) {
+    final h = value.hour.toString().padLeft(2, '0');
+    final m = value.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }
 
@@ -366,8 +518,10 @@ class _PlatformCostEditDialogState extends State<_PlatformCostEditDialog> {
                 controller: _c1,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
-                  labelText: 'Importo mese (€)',
+                  labelText: 'Fattura reale OpenAI (€)',
                   border: OutlineInputBorder(),
+                  helperText:
+                      'Opzionale. Se vuoto, il totale usa la stima automatica.',
                 ),
               ),
             ],

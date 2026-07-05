@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/normative/normative_search_config_service.dart';
+import '../../../core/call_analysis/call_analysis_config_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../services/firebase/normative_search_admin_service.dart';
+import '../../../services/firebase/call_analysis_admin_service.dart';
 import '../../../shared/widgets/section_header.dart';
-import '../widgets/normative_search_history_section.dart';
 
-class NormativeSearchPage extends StatefulWidget {
-  const NormativeSearchPage({super.key});
+class CallAnalysisPage extends StatefulWidget {
+  const CallAnalysisPage({super.key});
 
   @override
-  State<NormativeSearchPage> createState() => _NormativeSearchPageState();
+  State<CallAnalysisPage> createState() => _CallAnalysisPageState();
 }
 
-class _NormativeSearchPageState extends State<NormativeSearchPage> {
+class _CallAnalysisPageState extends State<CallAnalysisPage> {
   bool _saving = false;
   bool _dirty = false;
   String? _formError;
@@ -27,9 +26,7 @@ class _NormativeSearchPageState extends State<NormativeSearchPage> {
 
   void _syncFromRemote(String stored) {
     if (_dirty) return;
-    final text = stored.trim().isEmpty
-        ? NormativeSearchConfigService.defaultSystemPrompt
-        : stored;
+    final text = CallAnalysisConfigService.resolvePrompt(stored);
     if (_promptCtrl.text != text) {
       _promptCtrl.text = text;
     }
@@ -48,7 +45,7 @@ class _NormativeSearchPageState extends State<NormativeSearchPage> {
     });
 
     try {
-      await NormativeSearchAdminService.savePrompt(prompt);
+      await CallAnalysisAdminService.savePrompt(prompt);
       if (!mounted) return;
       setState(() {
         _saving = false;
@@ -90,14 +87,14 @@ class _NormativeSearchPageState extends State<NormativeSearchPage> {
     if (confirmed != true || !mounted) return;
     setState(() {
       _dirty = true;
-      _promptCtrl.text = NormativeSearchConfigService.defaultSystemPrompt;
+      _promptCtrl.text = CallAnalysisConfigService.defaultSystemPrompt;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<String>(
-      stream: NormativeSearchConfigService.watchStoredPrompt(),
+      stream: CallAnalysisConfigService.watchStoredPrompt(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData &&
@@ -111,15 +108,15 @@ class _NormativeSearchPageState extends State<NormativeSearchPage> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             const SectionHeader(
-              title: 'Ricerca normativa',
+              title: 'Analisi telefonata',
               subtitle:
-                  'Prompt AI per CreditCalc Store → Sviluppa → Ricerca normativa',
+                  'Prompt AI per CreditCalc Store → Sviluppa → Analisi telefonata',
             ),
             const SizedBox(height: 12),
             Text(
-              'Definisce il perimetro delle risposte (recupero crediti e '
-              'attività stragiudiziale). Salvato in Firestore '
-              'settings/normative_search.',
+              'Guida la valutazione della pratica e il suggerimento delle leve '
+              'prima del contatto col debitore. Salvato in Firestore '
+              'settings/call_analysis.',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 height: 1.45,
@@ -183,8 +180,6 @@ class _NormativeSearchPageState extends State<NormativeSearchPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            const NormativeSearchHistorySection(),
           ],
         );
       },
