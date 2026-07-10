@@ -1,11 +1,6 @@
-// ================================================================
-// IMPORT
-// ================================================================
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import '../utils/bk_local_storage.dart';
+import 'package:flutter/material.dart';
 
 // ================================================================
 // PAGE ROOT
@@ -22,6 +17,8 @@ class BkSupportPage extends StatefulWidget {
 // ================================================================
 class _BkSupportPageState extends State<BkSupportPage> {
   final user = FirebaseAuth.instance.currentUser;
+  late final Future<bool> _isAdminFuture;
+  final Map<String, TextEditingController> _replyControllers = {};
 
   // ================================================================
   // LIFECYCLE
@@ -29,19 +26,25 @@ class _BkSupportPageState extends State<BkSupportPage> {
   @override
   void initState() {
     super.initState();
-    _markSupportVisited();
+    _isAdminFuture = _resolveIsAdmin();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _replyControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<bool> _resolveIsAdmin() async {
+    final token = await user?.getIdTokenResult();
+    return token?.claims?['admin'] == true;
   }
 
   // ================================================================
   // LOCAL STORAGE
   // ================================================================
-  void _markSupportVisited() {
-    bkLocalStorageSet(
-      'lastSeenSupport',
-      DateTime.now().millisecondsSinceEpoch.toString(),
-    );
-  }
-
 // ================================================================
 // BUILD
 // ================================================================
@@ -50,8 +53,8 @@ class _BkSupportPageState extends State<BkSupportPage> {
     final isMobile =
         MediaQuery.of(context).size.width < 600;
 
-    return FutureBuilder<IdTokenResult>(
-      future: user?.getIdTokenResult(true),
+    return FutureBuilder<bool>(
+      future: _isAdminFuture,
       builder: (context, tokenSnap) {
 
         if (tokenSnap.connectionState == ConnectionState.waiting) {
@@ -60,8 +63,7 @@ class _BkSupportPageState extends State<BkSupportPage> {
           );
         }
 
-        final isAdmin =
-            tokenSnap.data?.claims?['admin'] == true;
+        final isAdmin = tokenSnap.data ?? false;
 
         final stream = isAdmin
             ? FirebaseFirestore.instance
@@ -107,8 +109,16 @@ class _BkSupportPageState extends State<BkSupportPage> {
                         );
                       }
 
-                      final tickets =
-                          snapshot.data!.docs;
+                      final tickets = snapshot.data!.docs.toList()
+                        ..sort((a, b) {
+                          final ta = (a['createdAt'] as Timestamp?)
+                                  ?.toDate() ??
+                              DateTime.fromMillisecondsSinceEpoch(0);
+                          final tb = (b['createdAt'] as Timestamp?)
+                                  ?.toDate() ??
+                              DateTime.fromMillisecondsSinceEpoch(0);
+                          return ta.compareTo(tb);
+                        });
 
                       return ListView.builder(
                         itemCount: tickets.length,
@@ -129,8 +139,10 @@ class _BkSupportPageState extends State<BkSupportPage> {
                               ?.toDate()
                               .toLocal();
 
-                          final replyCtrl =
-                          TextEditingController();
+                          final replyCtrl = _replyControllers.putIfAbsent(
+                            ticket.id,
+                            TextEditingController.new,
+                          );
 
                           return FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore
@@ -293,9 +305,18 @@ class _BkSupportPageState extends State<BkSupportPage> {
                                                   'messages')
                                                   .orderBy(
                                                   'timestamp')
-                                                  .snapshots(),
+                                                  .snapshots(
+                                                  includeMetadataChanges:
+                                                      true),
                                               builder: (context,
                                                   msgSnap) {
+
+                                                if (msgSnap.connectionState ==
+                                                        ConnectionState
+                                                            .waiting &&
+                                                    !msgSnap.hasData) {
+                                                  return const SizedBox();
+                                                }
 
                                                 if (!msgSnap
                                                     .hasData) {
@@ -305,7 +326,17 @@ class _BkSupportPageState extends State<BkSupportPage> {
                                                 final msgs =
                                                     msgSnap
                                                         .data!
-                                                        .docs;
+                                                        .docs
+                                                        .toList()
+                                                  ..sort((a, b) {
+                                                    final ta =
+                                                        _messageTimestamp(
+                                                            a);
+                                                    final tb =
+                                                        _messageTimestamp(
+                                                            b);
+                                                    return ta.compareTo(tb);
+                                                  });
 
                                                 return Column(
                                                   children:
@@ -404,76 +435,85 @@ class _BkSupportPageState extends State<BkSupportPage> {
                                               const SizedBox(
                                                   height: 12),
 
-                                              TextField(
-                                                controller:
-                                                replyCtrl,
-                                                decoration:
-                                                const InputDecoration(
-                                                  labelText:
-                                                  "Scrivi risposta",
-                                                  border:
-                                                  OutlineInputBorder(),
-                                                ),
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment
+                                                        .end,
+                                                children: [
+                                                  Expanded(
+                                                    child: TextField(
+                                                      controller:
+                                                          replyCtrl,
+                                                      decoration:
+                                                          const InputDecoration(
+                                                        hintText:
+                                                            'Scrivi una risposta...',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    tooltip: 'Invia',
+                                                    icon: const Icon(
+                                                        Icons.send),
+                                                    onPressed:
+                                                        () async {
+                                                      final text = replyCtrl
+                                                          .text
+                                                          .trim();
+                                                      if (text.isEmpty) {
+                                                        return;
+                                                      }
+
+                                                      replyCtrl.clear();
+
+                                                      await ticket.reference
+                                                          .collection(
+                                                              'messages')
+                                                          .add({
+                                                        'text': text,
+                                                        'sender':
+                                                            'admin',
+                                                        'timestamp':
+                                                            Timestamp.now(),
+                                                      });
+
+                                                      await ticket.reference
+                                                          .update({
+                                                        'lastMessageAt':
+                                                            Timestamp.now(),
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
                                               ),
 
                                               const SizedBox(
                                                   height: 8),
 
-                                              Row(
-                                                children: [
-                                                  ElevatedButton(
-                                                    onPressed:
-                                                        () async {
-                                                      if (replyCtrl
-                                                          .text
-                                                          .trim()
-                                                          .isEmpty) {
-                                                        return;
-                                                      }
-
-                                                      await ticket.reference
-                                                          .collection(
-                                                          'messages')
-                                                          .add({
-                                                        'text':
-                                                        replyCtrl.text
-                                                            .trim(),
-                                                        'sender':
-                                                        'admin',
-                                                        'timestamp':
-                                                        FieldValue.serverTimestamp(),
-                                                      });
-
-                                                      replyCtrl
-                                                          .clear();
-                                                    },
-                                                    child:
-                                                    const Text(
-                                                        "Rispondi"),
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.red,
                                                   ),
-                                                  const SizedBox(
-                                                      width:
-                                                      12),
-                                                  ElevatedButton(
-                                                    style:
-                                                    ElevatedButton.styleFrom(
-                                                      backgroundColor:
-                                                      Colors.red,
-                                                    ),
-                                                    onPressed:
-                                                        () async {
-                                                      await ticket
-                                                          .reference
-                                                          .update({
-                                                        'status':
-                                                        'closed'
-                                                      });
-                                                    },
-                                                    child:
-                                                    const Text(
-                                                        "Chiudi ticket"),
-                                                  ),
-                                                ],
+                                                  onPressed:
+                                                      () async {
+                                                    await ticket
+                                                        .reference
+                                                        .update({
+                                                      'status':
+                                                          'closed'
+                                                    });
+                                                  },
+                                                  child:
+                                                      const Text(
+                                                          'Chiudi ticket'),
+                                                ),
                                               ),
                                             ],
                                           ],
@@ -496,5 +536,12 @@ class _BkSupportPageState extends State<BkSupportPage> {
         );
       },
     );
+  }
+
+  DateTime _messageTimestamp(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>?;
+    final ts = data?['timestamp'];
+    if (ts is Timestamp) return ts.toDate();
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 }

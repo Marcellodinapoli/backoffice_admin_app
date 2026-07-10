@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../services/admin_menu_badge_notifier.dart';
+import '../widgets/admin_menu_badge_dot.dart';
 
 class AdminDrawer extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
+  final AdminMenuBadges badges;
 
   const AdminDrawer({
     super.key,
     required this.selectedIndex,
     required this.onSelect,
+    this.badges = const AdminMenuBadges(),
   });
+
+  static const communityIndex = 12;
+  static const supportIndex = 13;
 
   static const titles = [
     'Dashboard',
@@ -97,6 +104,11 @@ class AdminDrawer extends StatelessWidget {
               itemCount: titles.length,
               itemBuilder: (context, index) {
                 final selected = index == selectedIndex;
+                final showBadge = switch (index) {
+                  communityIndex => badges.community,
+                  supportIndex => badges.support,
+                  _ => false,
+                };
                 return ListTile(
                   leading: Icon(
                     _icons[index],
@@ -111,6 +123,7 @@ class AdminDrawer extends StatelessWidget {
                           selected ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
+                  trailing: adminMenuBadgeDot(visible: showBadge),
                   selected: selected,
                   onTap: () {
                     Navigator.pop(context);

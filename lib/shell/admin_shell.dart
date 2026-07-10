@@ -22,6 +22,8 @@ import '../features/plans/pages/plans_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
+import '../services/admin_menu_badge_controller.dart';
+import '../services/admin_menu_badge_notifier.dart';
 import '../services/auth_service.dart';
 import '../shared/widgets/gradient_header.dart';
 import 'admin_drawer.dart';
@@ -37,6 +39,18 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _index = 0;
   final _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    AdminMenuBadgeController.instance.start();
+  }
+
+  @override
+  void dispose() {
+    AdminMenuBadgeController.instance.stop();
+    super.dispose();
+  }
 
   static const _pages = [
     DashboardPage(),
@@ -94,37 +108,62 @@ class _AdminShellState extends State<AdminShell> {
   Widget build(BuildContext context) {
     final safeIndex = _index.clamp(0, _pages.length - 1);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: GradientHeader(
-        title: 'BackOffice Admin',
-        subtitle: AdminDrawer.titles[safeIndex],
-        actions: [
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: _logout,
-            icon: const Icon(Icons.logout_rounded),
+    return ValueListenableBuilder<AdminMenuBadges>(
+      valueListenable: AdminMenuBadgeNotifier.instance.badges,
+      builder: (context, badges, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: GradientHeader(
+            title: 'BackOffice Admin',
+            subtitle: AdminDrawer.titles[safeIndex],
+            leading: Builder(
+              builder: (context) => Badge(
+                isLabelVisible: badges.hasAny,
+                backgroundColor: Colors.red.shade700,
+                smallSize: 12,
+                offset: const Offset(-2, 2),
+                padding: EdgeInsets.zero,
+                child: IconButton(
+                  tooltip: 'Menù',
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Logout',
+                onPressed: _logout,
+                icon: const Icon(Icons.logout_rounded),
+              ),
+            ],
           ),
-        ],
-      ),
-      drawer: AdminDrawer(
-        selectedIndex: safeIndex,
-        onSelect: (i) {
-          setState(() => _index = i);
-          if (i == 1 || i == 2) {
-            PublicPlanLimitsConfigService.ensureLoaded().then((_) {
-              PlanLimitsRefresh.bump();
-            });
-          }
-        },
-      ),
-      body: SafeArea(
-        top: false,
-        child: IndexedStack(
-          index: safeIndex,
-          children: _pages,
-        ),
-      ),
+          drawer: AdminDrawer(
+            selectedIndex: safeIndex,
+            badges: badges,
+            onSelect: (i) {
+              setState(() => _index = i);
+              if (i == AdminDrawer.communityIndex) {
+                AdminMenuBadgeController.markCommunityVisited();
+              } else if (i == AdminDrawer.supportIndex) {
+                AdminMenuBadgeController.markSupportVisited();
+              }
+              if (i == 1 || i == 2) {
+                PublicPlanLimitsConfigService.ensureLoaded().then((_) {
+                  PlanLimitsRefresh.bump();
+                });
+              }
+            },
+          ),
+          body: SafeArea(
+            top: false,
+            child: IndexedStack(
+              index: safeIndex,
+              children: _pages,
+            ),
+          ),
+        );
+      },
     );
   }
 }

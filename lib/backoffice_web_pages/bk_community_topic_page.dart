@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/bk_local_storage.dart';
+import '../services/admin_menu_badge_controller.dart';
 import '../widgets/bk_impaginazione_secondaria.dart';
 
 // ================================================================
@@ -55,10 +56,7 @@ class _CommunityTopicPageState extends State<CommunityTopicPage> {
     if (stored != null) {
       _lastSeen = int.tryParse(stored) ?? 0;
     }
-    bkLocalStorageSet(
-      'lastSeen',
-      DateTime.now().millisecondsSinceEpoch.toString(),
-    );
+    AdminMenuBadgeController.markCommunityVisited();
   }
 
   void _loadSeenMessages() {
