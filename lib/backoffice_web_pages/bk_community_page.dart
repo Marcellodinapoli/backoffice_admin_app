@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/theme/app_colors.dart';
+import '../services/admin_menu_badge_controller.dart';
 import '../shared/widgets/section_header.dart';
 import 'bk_community_topic_page.dart';
 
@@ -34,6 +35,9 @@ class _BkCommunityPageState extends State<BkCommunityPage> {
   void initState() {
     super.initState();
     _checkAdmin();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AdminMenuBadgeController.markCommunityVisited();
+    });
   }
 
   Future<void> _checkAdmin() async {

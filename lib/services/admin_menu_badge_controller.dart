@@ -29,20 +29,23 @@ final class AdminMenuBadgeController {
   String? _adminUid;
   int _firestoreSupportSeen = 0;
   int _firestoreCommunitySeen = 0;
+  bool _seenLoaded = false;
 
   void start() {
     if (_authSub != null) return;
 
-    _authSub = _auth.authStateChanges().listen((user) {
+    _authSub = _auth.authStateChanges().listen((user) async {
       if (user == null) {
         _stopDataListeners();
         _notifier.badges.value = const AdminMenuBadges();
         return;
       }
-      if (_adminUid == user.uid) return;
+      if (_adminUid == user.uid && _seenLoaded) return;
       _stopDataListeners();
       _adminUid = user.uid;
-      _loadSeenFromFirestore(user.uid);
+      _seenLoaded = false;
+      await _loadSeenFromFirestore(user.uid);
+      _seenLoaded = true;
       _attachListeners();
     });
   }
@@ -57,15 +60,10 @@ final class AdminMenuBadgeController {
   static void markSupportVisited() {
     final now = DateTime.now().millisecondsSinceEpoch;
     bkLocalStorageSet('lastSeenSupport', now.toString());
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      unawaited(
-        FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'adminLastSeenSupport': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)),
-      );
-      instance._firestoreSupportSeen = now;
-    }
+    instance._firestoreSupportSeen = now;
+    instance._persistSeen(
+      supportMs: now,
+    );
     instance.scheduleRefresh();
   }
 
@@ -73,16 +71,10 @@ final class AdminMenuBadgeController {
     final now = DateTime.now().millisecondsSinceEpoch;
     bkLocalStorageSet('lastSeenCommunity', now.toString());
     bkLocalStorageSet('lastSeen', now.toString());
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      unawaited(
-        FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'adminLastSeenCommunity': FieldValue.serverTimestamp(),
-          'adminLastSeen': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)),
-      );
-      instance._firestoreCommunitySeen = now;
-    }
+    instance._firestoreCommunitySeen = now;
+    instance._persistSeen(
+      communityMs: now,
+    );
     instance.scheduleRefresh();
   }
 
@@ -96,7 +88,61 @@ final class AdminMenuBadgeController {
       final community = _timestampToMs(data?['adminLastSeenCommunity']);
       final topics = _timestampToMs(data?['adminLastSeen']);
       _firestoreCommunitySeen = max(community, topics);
-      _scheduleRecompute();
+
+      final localSupport =
+          int.tryParse(bkLocalStorageGet('lastSeenSupport') ?? '') ?? 0;
+      final localCommunity = max(
+        int.tryParse(bkLocalStorageGet('lastSeenCommunity') ?? '') ?? 0,
+        int.tryParse(bkLocalStorageGet('lastSeen') ?? '') ?? 0,
+      );
+
+      if (_firestoreSupportSeen <= 0 && localSupport > 0) {
+        _firestoreSupportSeen = localSupport;
+        unawaited(_persistSeen(supportMs: localSupport));
+      }
+      if (_firestoreCommunitySeen <= 0 && localCommunity > 0) {
+        _firestoreCommunitySeen = localCommunity;
+        unawaited(_persistSeen(communityMs: localCommunity));
+      }
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (_firestoreSupportSeen <= 0) {
+        _firestoreSupportSeen = now;
+        bkLocalStorageSet('lastSeenSupport', now.toString());
+        unawaited(_persistSeen(supportMs: now));
+      }
+      if (_firestoreCommunitySeen <= 0) {
+        _firestoreCommunitySeen = now;
+        bkLocalStorageSet('lastSeenCommunity', now.toString());
+        bkLocalStorageSet('lastSeen', now.toString());
+        unawaited(_persistSeen(communityMs: now));
+      }
+    } catch (_) {}
+    _scheduleRecompute();
+  }
+
+  Future<void> _persistSeen({int? supportMs, int? communityMs}) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    final patch = <String, dynamic>{};
+    if (supportMs != null) {
+      patch['adminLastSeenSupport'] =
+          Timestamp.fromMillisecondsSinceEpoch(supportMs);
+    }
+    if (communityMs != null) {
+      patch['adminLastSeenCommunity'] =
+          Timestamp.fromMillisecondsSinceEpoch(communityMs);
+      patch['adminLastSeen'] =
+          Timestamp.fromMillisecondsSinceEpoch(communityMs);
+    }
+    if (patch.isEmpty) return;
+
+    try {
+      await _firestore.collection('users').doc(uid).set(
+            patch,
+            SetOptions(merge: true),
+          );
     } catch (_) {}
   }
 
@@ -114,6 +160,7 @@ final class AdminMenuBadgeController {
     _adminUid = null;
     _firestoreSupportSeen = 0;
     _firestoreCommunitySeen = 0;
+    _seenLoaded = false;
     _supportMessages.clear();
     _communityMessages.clear();
   }
@@ -193,7 +240,7 @@ final class AdminMenuBadgeController {
   }
 
   void _recompute() {
-    if (_adminUid == null) {
+    if (_adminUid == null || !_seenLoaded) {
       _notifier.badges.value = const AdminMenuBadges();
       return;
     }
@@ -206,13 +253,15 @@ final class AdminMenuBadgeController {
 
   bool _hasSupportUnread() {
     final lastSeen = _readLastSeenSupportMs();
+    if (lastSeen <= 0) return false;
+
     for (final messages in _supportMessages.values) {
       for (final doc in messages.docs) {
         final data = doc.data();
         if (data['sender'] != 'user') continue;
         final millis = _docMillis(data['timestamp']);
         if (millis == null) continue;
-        if (lastSeen <= 0 || millis > lastSeen) return true;
+        if (millis > lastSeen) return true;
       }
     }
     return false;
@@ -220,6 +269,7 @@ final class AdminMenuBadgeController {
 
   bool _hasCommunityUnread(String adminUid) {
     final lastSeen = _readLastSeenCommunityMs();
+    if (lastSeen <= 0) return false;
 
     for (final messages in _communityMessages.values) {
       for (final doc in messages.docs) {
@@ -228,7 +278,7 @@ final class AdminMenuBadgeController {
         if (authorUid.isEmpty || authorUid == adminUid) continue;
         final millis = _docMillis(data['timestamp']);
         if (millis == null) continue;
-        if (lastSeen <= 0 || millis > lastSeen) return true;
+        if (millis > lastSeen) return true;
       }
     }
     return false;
