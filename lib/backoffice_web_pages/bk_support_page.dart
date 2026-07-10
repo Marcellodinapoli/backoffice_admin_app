@@ -304,7 +304,8 @@ class _BkSupportPageState extends State<BkSupportPage> {
                                                   .collection(
                                                   'messages')
                                                   .orderBy(
-                                                  'timestamp')
+                                                  'timestamp',
+                                                  descending: true)
                                                   .snapshots(
                                                   includeMetadataChanges:
                                                       true),
@@ -335,7 +336,7 @@ class _BkSupportPageState extends State<BkSupportPage> {
                                                     final tb =
                                                         _messageTimestamp(
                                                             b);
-                                                    return ta.compareTo(tb);
+                                                    return tb.compareTo(ta);
                                                   });
 
                                                 return Column(
