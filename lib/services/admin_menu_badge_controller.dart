@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,6 +27,8 @@ final class AdminMenuBadgeController {
 
   Timer? _recomputeTimer;
   String? _adminUid;
+  int _firestoreSupportSeen = 0;
+  int _firestoreCommunitySeen = 0;
 
   void start() {
     if (_authSub != null) return;
@@ -39,6 +42,7 @@ final class AdminMenuBadgeController {
       if (_adminUid == user.uid) return;
       _stopDataListeners();
       _adminUid = user.uid;
+      _loadSeenFromFirestore(user.uid);
       _attachListeners();
     });
   }
@@ -51,21 +55,50 @@ final class AdminMenuBadgeController {
   }
 
   static void markSupportVisited() {
-    bkLocalStorageSet(
-      'lastSeenSupport',
-      DateTime.now().millisecondsSinceEpoch.toString(),
-    );
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bkLocalStorageSet('lastSeenSupport', now.toString());
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      unawaited(
+        FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'adminLastSeenSupport': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)),
+      );
+      instance._firestoreSupportSeen = now;
+    }
     instance.scheduleRefresh();
   }
 
   static void markCommunityVisited() {
-    final now = DateTime.now().millisecondsSinceEpoch.toString();
-    bkLocalStorageSet('lastSeenCommunity', now);
-    bkLocalStorageSet('lastSeen', now);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bkLocalStorageSet('lastSeenCommunity', now.toString());
+    bkLocalStorageSet('lastSeen', now.toString());
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      unawaited(
+        FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'adminLastSeenCommunity': FieldValue.serverTimestamp(),
+          'adminLastSeen': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)),
+      );
+      instance._firestoreCommunitySeen = now;
+    }
     instance.scheduleRefresh();
   }
 
   void scheduleRefresh() => _scheduleRecompute();
+
+  Future<void> _loadSeenFromFirestore(String uid) async {
+    try {
+      final snap = await _firestore.collection('users').doc(uid).get();
+      final data = snap.data();
+      _firestoreSupportSeen = _timestampToMs(data?['adminLastSeenSupport']);
+      final community = _timestampToMs(data?['adminLastSeenCommunity']);
+      final topics = _timestampToMs(data?['adminLastSeen']);
+      _firestoreCommunitySeen = max(community, topics);
+      _scheduleRecompute();
+    } catch (_) {}
+  }
 
   void _stopDataListeners() {
     _recomputeTimer?.cancel();
@@ -79,6 +112,8 @@ final class AdminMenuBadgeController {
     }
     _messageSubs.clear();
     _adminUid = null;
+    _firestoreSupportSeen = 0;
+    _firestoreCommunitySeen = 0;
     _supportMessages.clear();
     _communityMessages.clear();
   }
@@ -170,7 +205,7 @@ final class AdminMenuBadgeController {
   }
 
   bool _hasSupportUnread() {
-    final lastSeen = _readLastSeenMs('lastSeenSupport');
+    final lastSeen = _readLastSeenSupportMs();
     for (final messages in _supportMessages.values) {
       for (final doc in messages.docs) {
         final data = doc.data();
@@ -184,9 +219,7 @@ final class AdminMenuBadgeController {
   }
 
   bool _hasCommunityUnread(String adminUid) {
-    final menuSeen = _readLastSeenMs('lastSeenCommunity');
-    final topicSeen = _readLastSeenMs('lastSeen');
-    final lastSeen = menuSeen > topicSeen ? menuSeen : topicSeen;
+    final lastSeen = _readLastSeenCommunityMs();
 
     for (final messages in _communityMessages.values) {
       for (final doc in messages.docs) {
@@ -201,8 +234,24 @@ final class AdminMenuBadgeController {
     return false;
   }
 
-  int _readLastSeenMs(String key) {
-    return int.tryParse(bkLocalStorageGet(key) ?? '') ?? 0;
+  int _readLastSeenSupportMs() {
+    final local = int.tryParse(bkLocalStorageGet('lastSeenSupport') ?? '') ?? 0;
+    return max(local, _firestoreSupportSeen);
+  }
+
+  int _readLastSeenCommunityMs() {
+    final menuSeen =
+        int.tryParse(bkLocalStorageGet('lastSeenCommunity') ?? '') ?? 0;
+    final topicSeen = int.tryParse(bkLocalStorageGet('lastSeen') ?? '') ?? 0;
+    final local = max(menuSeen, topicSeen);
+    return max(local, _firestoreCommunitySeen);
+  }
+
+  int _timestampToMs(dynamic raw) {
+    if (raw is Timestamp) return raw.millisecondsSinceEpoch;
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    return 0;
   }
 
   int? _docMillis(dynamic raw) {

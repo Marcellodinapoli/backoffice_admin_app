@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_version.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/dashboard_stats.dart';
 import '../../../services/firebase/settings_service.dart';
@@ -202,11 +203,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                      const Card(
+                      Card(
                         child: ListTile(
-                          leading: Icon(Icons.info_outline),
-                          title: Text('Versione app'),
-                          subtitle: Text('1.0.0 · BackOffice Admin Mobile'),
+                          leading: const Icon(Icons.info_outline),
+                          title: const Text('Versione app'),
+                          subtitle: Text(AppVersion.display),
                         ),
                       ),
                     ],

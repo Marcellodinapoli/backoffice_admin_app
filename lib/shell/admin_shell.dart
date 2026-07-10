@@ -22,6 +22,7 @@ import '../features/plans/pages/plans_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
+import '../features/warmup/pages/warmup_monitoring_page.dart';
 import '../services/admin_menu_badge_controller.dart';
 import '../services/admin_menu_badge_notifier.dart';
 import '../services/auth_service.dart';
@@ -64,6 +65,7 @@ class _AdminShellState extends State<AdminShell> {
     RoleplayPage(),
     NormativeSearchPage(),
     CallAnalysisPage(),
+    WarmupMonitoringPage(),
     StatisticsPage(),
     BkCommunityPage(),
     BkSupportPage(),

@@ -16,8 +16,9 @@ class AdminDrawer extends StatelessWidget {
     this.badges = const AdminMenuBadges(),
   });
 
-  static const communityIndex = 12;
-  static const supportIndex = 13;
+  static const communityIndex = 13;
+  static const supportIndex = 14;
+  static const warmupIndex = 11;
 
   static const titles = [
     'Dashboard',
@@ -31,6 +32,7 @@ class AdminDrawer extends StatelessWidget {
     'Role Play',
     'Ricerca normativa',
     'Analisi telefonata',
+    'Warm-up',
     'Statistiche',
     'Community',
     'Assistenza',
@@ -53,6 +55,7 @@ class AdminDrawer extends StatelessWidget {
     Icons.record_voice_over_outlined,
     Icons.balance_outlined,
     Icons.phone_in_talk_outlined,
+    Icons.psychology_outlined,
     Icons.bar_chart_outlined,
     Icons.forum_outlined,
     Icons.support_agent_outlined,

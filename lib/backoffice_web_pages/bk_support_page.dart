@@ -111,13 +111,9 @@ class _BkSupportPageState extends State<BkSupportPage> {
 
                       final tickets = snapshot.data!.docs.toList()
                         ..sort((a, b) {
-                          final ta = (a['createdAt'] as Timestamp?)
-                                  ?.toDate() ??
-                              DateTime.fromMillisecondsSinceEpoch(0);
-                          final tb = (b['createdAt'] as Timestamp?)
-                                  ?.toDate() ??
-                              DateTime.fromMillisecondsSinceEpoch(0);
-                          return ta.compareTo(tb);
+                          final ta = _ticketSortTime(a);
+                          final tb = _ticketSortTime(b);
+                          return tb.compareTo(ta);
                         });
 
                       return ListView.builder(
@@ -537,6 +533,14 @@ class _BkSupportPageState extends State<BkSupportPage> {
         );
       },
     );
+  }
+
+  DateTime _ticketSortTime(QueryDocumentSnapshot ticket) {
+    final last = ticket['lastMessageAt'];
+    if (last is Timestamp) return last.toDate();
+    final created = ticket['createdAt'];
+    if (created is Timestamp) return created.toDate();
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   DateTime _messageTimestamp(QueryDocumentSnapshot doc) {
