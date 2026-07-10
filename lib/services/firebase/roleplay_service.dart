@@ -51,6 +51,28 @@ class RoleplayService {
     });
   }
 
+  Future<void> createSimulation({
+    required String title,
+    required String category,
+    required String prompt,
+    required List<Map<String, String>> practiceData,
+    required String difficulty,
+    required String personality,
+  }) {
+    final trimmed = prompt.trim();
+    return _fs.collection(FirestoreCollections.roleplay).add({
+      'title': title,
+      'category': category,
+      'difficulty': difficulty,
+      'personality': personality,
+      'prompt': trimmed,
+      'gptPrompt': trimmed,
+      'practiceData': practiceData,
+      'aiProvider': RoleplayConfigService.openAiProvider,
+      'date': DateTime.now().toIso8601String(),
+    });
+  }
+
   Future<void> deleteSimulation(String id) {
     return _fs.doc(FirestoreCollections.roleplay, id).delete();
   }

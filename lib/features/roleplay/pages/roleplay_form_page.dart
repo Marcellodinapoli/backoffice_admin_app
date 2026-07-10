@@ -6,9 +6,16 @@ import '../../../models/roleplay_simulation.dart';
 import '../../../services/firebase/roleplay_service.dart';
 
 class RoleplayFormPage extends StatefulWidget {
-  final RoleplaySimulation simulation;
+  final RoleplaySimulation? simulation;
+  final String initialCategory;
 
-  const RoleplayFormPage({super.key, required this.simulation});
+  const RoleplayFormPage({
+    super.key,
+    this.simulation,
+    this.initialCategory = 'Sollecito',
+  });
+
+  bool get isEditing => simulation != null;
 
   @override
   State<RoleplayFormPage> createState() => _RoleplayFormPageState();
@@ -42,27 +49,34 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
   void initState() {
     super.initState();
     final sim = widget.simulation;
-    _titleCtrl.text = sim.title;
-    _promptCtrl.text = RoleplayConfigService.resolveSimulationPrompt({
-      'prompt': sim.prompt,
-      'gptPrompt': sim.gptPrompt,
-    });
-    _category =
-        sim.category == 'Recupero' ? 'Recupero' : 'Sollecito';
-    _difficulty = sim.difficulty;
-    _personality = sim.personality;
+    if (sim != null) {
+      _titleCtrl.text = sim.title;
+      _promptCtrl.text = RoleplayConfigService.resolveSimulationPrompt({
+        'prompt': sim.prompt,
+        'gptPrompt': sim.gptPrompt,
+      });
+      _category = sim.category == 'Recupero' ? 'Recupero' : 'Sollecito';
+      _difficulty = sim.difficulty;
+      _personality = sim.personality;
 
-    if (sim.practiceData.isEmpty) {
-      _practiceRows.add(_PracticeRow());
-    } else {
-      for (final row in sim.practiceData) {
-        _practiceRows.add(
-          _PracticeRow(
-            labelText: row['label']?.toString() ?? '',
-            valueText: row['value']?.toString() ?? '',
-          ),
-        );
+      if (sim.practiceData.isEmpty) {
+        _practiceRows.add(_PracticeRow());
+      } else {
+        for (final row in sim.practiceData) {
+          _practiceRows.add(
+            _PracticeRow(
+              labelText: row['label']?.toString() ?? '',
+              valueText: row['value']?.toString() ?? '',
+            ),
+          );
+        }
       }
+    } else {
+      _category = widget.initialCategory == 'Recupero' ? 'Recupero' : 'Sollecito';
+      _difficulty = RoleplayConfigService.defaultDifficulty;
+      _personality = RoleplayConfigService.defaultPersonality;
+      _promptCtrl.text = RoleplayConfigService.defaultSimulationPrompt;
+      _practiceRows.add(_PracticeRow());
     }
   }
 
@@ -118,19 +132,37 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
     setState(() => _saving = true);
 
     try {
-      await RoleplayService.instance.updateSimulation(
-        id: widget.simulation.id,
-        title: title,
-        category: _category,
-        prompt: _promptCtrl.text.trim(),
-        practiceData: _formattedPracticeData(),
-        difficulty: _difficulty,
-        personality: _personality,
-      );
+      final practiceData = _formattedPracticeData();
+      if (widget.isEditing) {
+        await RoleplayService.instance.updateSimulation(
+          id: widget.simulation!.id,
+          title: title,
+          category: _category,
+          prompt: _promptCtrl.text.trim(),
+          practiceData: practiceData,
+          difficulty: _difficulty,
+          personality: _personality,
+        );
+      } else {
+        await RoleplayService.instance.createSimulation(
+          title: title,
+          category: _category,
+          prompt: _promptCtrl.text.trim(),
+          practiceData: practiceData,
+          difficulty: _difficulty,
+          personality: _personality,
+        );
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Simulazione aggiornata')),
+        SnackBar(
+          content: Text(
+            widget.isEditing
+                ? 'Simulazione aggiornata'
+                : 'Simulazione creata',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -152,7 +184,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        title: const Text('Modifica simulazione'),
+        title: Text(widget.isEditing ? 'Modifica simulazione' : 'Nuova simulazione'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),

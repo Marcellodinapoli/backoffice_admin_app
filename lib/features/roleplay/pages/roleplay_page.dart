@@ -45,6 +45,16 @@ class _RoleplayPageState extends State<RoleplayPage>
     );
   }
 
+  void _createSimulation() {
+    final category = _tabController.index == 1 ? 'Recupero' : 'Sollecito';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RoleplayFormPage(initialCategory: category),
+      ),
+    );
+  }
+
   Future<void> _showPromptDialog(RoleplaySimulation simulation) async {
     await showDialog<void>(
       context: context,
@@ -97,9 +107,17 @@ class _RoleplayPageState extends State<RoleplayPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeader(
+        SectionHeader(
           title: 'Role Play',
           subtitle: 'Simulazioni per formazione',
+          trailing: FilledButton.icon(
+            onPressed: _createSimulation,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Nuovo'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            ),
+          ),
         ),
         TabBar(
           controller: _tabController,
