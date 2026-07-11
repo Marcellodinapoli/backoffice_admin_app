@@ -149,6 +149,10 @@ class _AdminShellState extends State<AdminShell> {
                 AdminMenuBadgeController.markCommunityVisited();
               } else if (i == AdminDrawer.supportIndex) {
                 AdminMenuBadgeController.markSupportVisited();
+              } else if (i == AdminDrawer.warmupIndex) {
+                AdminMenuBadgeController.markWarmupVisited();
+              } else if (i == AdminDrawer.creditJobIndex) {
+                AdminMenuBadgeController.markCreditJobVisited();
               }
               if (i == 1 || i == 2) {
                 PublicPlanLimitsConfigService.ensureLoaded().then((_) {

@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/bk_local_storage.dart';
 import 'admin_menu_badge_notifier.dart';
 
-/// Ascolta messaggi utente su support/community e aggiorna i badge del drawer.
+/// Ascolta aggiornamenti utente su support/community/warm-up/job e aggiorna i badge.
 final class AdminMenuBadgeController {
   AdminMenuBadgeController._();
 
@@ -24,11 +24,17 @@ final class AdminMenuBadgeController {
 
   final Map<String, QuerySnapshot<Map<String, dynamic>>> _supportMessages = {};
   final Map<String, QuerySnapshot<Map<String, dynamic>>> _communityMessages = {};
+  QuerySnapshot<Map<String, dynamic>>? _supportTicketsSnap;
+  QuerySnapshot<Map<String, dynamic>>? _communityTopicsSnap;
+  QuerySnapshot<Map<String, dynamic>>? _warmupPendingSnap;
+  QuerySnapshot<Map<String, dynamic>>? _jobOffersSnap;
 
   Timer? _recomputeTimer;
   String? _adminUid;
   int _firestoreSupportSeen = 0;
   int _firestoreCommunitySeen = 0;
+  int _firestoreWarmupSeen = 0;
+  int _firestoreCreditJobSeen = 0;
   bool _seenLoaded = false;
 
   void start() {
@@ -61,9 +67,7 @@ final class AdminMenuBadgeController {
     final now = DateTime.now().millisecondsSinceEpoch;
     bkLocalStorageSet('lastSeenSupport', now.toString());
     instance._firestoreSupportSeen = now;
-    instance._persistSeen(
-      supportMs: now,
-    );
+    instance._persistSeen(supportMs: now);
     instance.scheduleRefresh();
   }
 
@@ -72,9 +76,23 @@ final class AdminMenuBadgeController {
     bkLocalStorageSet('lastSeenCommunity', now.toString());
     bkLocalStorageSet('lastSeen', now.toString());
     instance._firestoreCommunitySeen = now;
-    instance._persistSeen(
-      communityMs: now,
-    );
+    instance._persistSeen(communityMs: now);
+    instance.scheduleRefresh();
+  }
+
+  static void markWarmupVisited() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bkLocalStorageSet('lastSeenWarmup', now.toString());
+    instance._firestoreWarmupSeen = now;
+    instance._persistSeen(warmupMs: now);
+    instance.scheduleRefresh();
+  }
+
+  static void markCreditJobVisited() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bkLocalStorageSet('lastSeenCreditJob', now.toString());
+    instance._firestoreCreditJobSeen = now;
+    instance._persistSeen(creditJobMs: now);
     instance.scheduleRefresh();
   }
 
@@ -88,6 +106,8 @@ final class AdminMenuBadgeController {
       final community = _timestampToMs(data?['adminLastSeenCommunity']);
       final topics = _timestampToMs(data?['adminLastSeen']);
       _firestoreCommunitySeen = max(community, topics);
+      _firestoreWarmupSeen = _timestampToMs(data?['adminLastSeenWarmup']);
+      _firestoreCreditJobSeen = _timestampToMs(data?['adminLastSeenCreditJob']);
 
       final localSupport =
           int.tryParse(bkLocalStorageGet('lastSeenSupport') ?? '') ?? 0;
@@ -95,6 +115,10 @@ final class AdminMenuBadgeController {
         int.tryParse(bkLocalStorageGet('lastSeenCommunity') ?? '') ?? 0,
         int.tryParse(bkLocalStorageGet('lastSeen') ?? '') ?? 0,
       );
+      final localWarmup =
+          int.tryParse(bkLocalStorageGet('lastSeenWarmup') ?? '') ?? 0;
+      final localCreditJob =
+          int.tryParse(bkLocalStorageGet('lastSeenCreditJob') ?? '') ?? 0;
 
       if (_firestoreSupportSeen <= 0 && localSupport > 0) {
         _firestoreSupportSeen = localSupport;
@@ -103,6 +127,14 @@ final class AdminMenuBadgeController {
       if (_firestoreCommunitySeen <= 0 && localCommunity > 0) {
         _firestoreCommunitySeen = localCommunity;
         unawaited(_persistSeen(communityMs: localCommunity));
+      }
+      if (_firestoreWarmupSeen <= 0 && localWarmup > 0) {
+        _firestoreWarmupSeen = localWarmup;
+        unawaited(_persistSeen(warmupMs: localWarmup));
+      }
+      if (_firestoreCreditJobSeen <= 0 && localCreditJob > 0) {
+        _firestoreCreditJobSeen = localCreditJob;
+        unawaited(_persistSeen(creditJobMs: localCreditJob));
       }
 
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -117,11 +149,26 @@ final class AdminMenuBadgeController {
         bkLocalStorageSet('lastSeen', now.toString());
         unawaited(_persistSeen(communityMs: now));
       }
+      if (_firestoreWarmupSeen <= 0) {
+        _firestoreWarmupSeen = now;
+        bkLocalStorageSet('lastSeenWarmup', now.toString());
+        unawaited(_persistSeen(warmupMs: now));
+      }
+      if (_firestoreCreditJobSeen <= 0) {
+        _firestoreCreditJobSeen = now;
+        bkLocalStorageSet('lastSeenCreditJob', now.toString());
+        unawaited(_persistSeen(creditJobMs: now));
+      }
     } catch (_) {}
     _scheduleRecompute();
   }
 
-  Future<void> _persistSeen({int? supportMs, int? communityMs}) async {
+  Future<void> _persistSeen({
+    int? supportMs,
+    int? communityMs,
+    int? warmupMs,
+    int? creditJobMs,
+  }) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
@@ -135,6 +182,14 @@ final class AdminMenuBadgeController {
           Timestamp.fromMillisecondsSinceEpoch(communityMs);
       patch['adminLastSeen'] =
           Timestamp.fromMillisecondsSinceEpoch(communityMs);
+    }
+    if (warmupMs != null) {
+      patch['adminLastSeenWarmup'] =
+          Timestamp.fromMillisecondsSinceEpoch(warmupMs);
+    }
+    if (creditJobMs != null) {
+      patch['adminLastSeenCreditJob'] =
+          Timestamp.fromMillisecondsSinceEpoch(creditJobMs);
     }
     if (patch.isEmpty) return;
 
@@ -160,14 +215,21 @@ final class AdminMenuBadgeController {
     _adminUid = null;
     _firestoreSupportSeen = 0;
     _firestoreCommunitySeen = 0;
+    _firestoreWarmupSeen = 0;
+    _firestoreCreditJobSeen = 0;
     _seenLoaded = false;
     _supportMessages.clear();
     _communityMessages.clear();
+    _supportTicketsSnap = null;
+    _communityTopicsSnap = null;
+    _warmupPendingSnap = null;
+    _jobOffersSnap = null;
   }
 
   void _attachListeners() {
     _subs.add(
       _firestore.collection('support').snapshots().listen((snap) {
+        _supportTicketsSnap = snap;
         _syncChildListeners(
           currentIds: snap.docs.map((doc) => doc.id).toSet(),
           prefix: 'support:',
@@ -190,6 +252,7 @@ final class AdminMenuBadgeController {
 
     _subs.add(
       _firestore.collection('community').snapshots().listen((snap) {
+        _communityTopicsSnap = snap;
         _syncChildListeners(
           currentIds: snap.docs.map((doc) => doc.id).toSet(),
           prefix: 'community:',
@@ -206,6 +269,24 @@ final class AdminMenuBadgeController {
           },
           onRemove: (topicId) => _communityMessages.remove(topicId),
         );
+        _scheduleRecompute();
+      }),
+    );
+
+    _subs.add(
+      _firestore
+          .collection('warmup_contestations')
+          .where('status', isEqualTo: 'pending_review')
+          .snapshots()
+          .listen((snap) {
+        _warmupPendingSnap = snap;
+        _scheduleRecompute();
+      }),
+    );
+
+    _subs.add(
+      _firestore.collection('job_offers').snapshots().listen((snap) {
+        _jobOffersSnap = snap;
         _scheduleRecompute();
       }),
     );
@@ -248,6 +329,8 @@ final class AdminMenuBadgeController {
     _notifier.badges.value = AdminMenuBadges(
       community: _hasCommunityUnread(_adminUid!),
       support: _hasSupportUnread(),
+      warmup: _hasWarmupUnread(),
+      creditJob: _hasCreditJobUnread(),
     );
   }
 
@@ -263,6 +346,14 @@ final class AdminMenuBadgeController {
         if (millis == null) continue;
         if (millis > lastSeen) return true;
       }
+    }
+
+    final tickets = _supportTicketsSnap?.docs ?? const [];
+    for (final doc in tickets) {
+      final data = doc.data();
+      final millis = _docMillis(data['createdAt']);
+      if (millis == null) continue;
+      if (millis > lastSeen) return true;
     }
     return false;
   }
@@ -281,6 +372,44 @@ final class AdminMenuBadgeController {
         if (millis > lastSeen) return true;
       }
     }
+
+    final topics = _communityTopicsSnap?.docs ?? const [];
+    for (final doc in topics) {
+      final data = doc.data();
+      final authorUid = (data['userId'] ?? '').toString();
+      if (authorUid.isEmpty || authorUid == adminUid) continue;
+      final millis = _docMillis(data['createdAt']);
+      if (millis == null) continue;
+      if (millis > lastSeen) return true;
+    }
+    return false;
+  }
+
+  bool _hasWarmupUnread() {
+    final lastSeen = _readLastSeenWarmupMs();
+    if (lastSeen <= 0) return false;
+
+    final docs = _warmupPendingSnap?.docs ?? const [];
+    for (final doc in docs) {
+      final millis = _docMillis(doc.data()['createdAt']);
+      if (millis == null) continue;
+      if (millis > lastSeen) return true;
+    }
+    return false;
+  }
+
+  bool _hasCreditJobUnread() {
+    final lastSeen = _readLastSeenCreditJobMs();
+    if (lastSeen <= 0) return false;
+
+    final docs = _jobOffersSnap?.docs ?? const [];
+    for (final doc in docs) {
+      final data = doc.data();
+      if ((data['status'] ?? 'pending').toString() != 'pending') continue;
+      final millis = _docMillis(data['createdAt']);
+      if (millis == null) continue;
+      if (millis > lastSeen) return true;
+    }
     return false;
   }
 
@@ -295,6 +424,17 @@ final class AdminMenuBadgeController {
     final topicSeen = int.tryParse(bkLocalStorageGet('lastSeen') ?? '') ?? 0;
     final local = max(menuSeen, topicSeen);
     return max(local, _firestoreCommunitySeen);
+  }
+
+  int _readLastSeenWarmupMs() {
+    final local = int.tryParse(bkLocalStorageGet('lastSeenWarmup') ?? '') ?? 0;
+    return max(local, _firestoreWarmupSeen);
+  }
+
+  int _readLastSeenCreditJobMs() {
+    final local =
+        int.tryParse(bkLocalStorageGet('lastSeenCreditJob') ?? '') ?? 0;
+    return max(local, _firestoreCreditJobSeen);
   }
 
   int _timestampToMs(dynamic raw) {

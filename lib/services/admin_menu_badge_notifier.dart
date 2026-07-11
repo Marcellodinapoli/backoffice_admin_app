@@ -3,16 +3,20 @@ import 'package:flutter/foundation.dart';
 class AdminMenuBadges {
   final bool community;
   final bool support;
+  final bool warmup;
+  final bool creditJob;
 
   const AdminMenuBadges({
     this.community = false,
     this.support = false,
+    this.warmup = false,
+    this.creditJob = false,
   });
 
-  bool get hasAny => community || support;
+  bool get hasAny => community || support || warmup || creditJob;
 }
 
-/// Badge sul menù drawer BackOffice (Community + Assistenza).
+/// Badge sul menù drawer BackOffice (Community, Assistenza, Warm-up, CreditJob).
 final class AdminMenuBadgeNotifier {
   AdminMenuBadgeNotifier._();
 

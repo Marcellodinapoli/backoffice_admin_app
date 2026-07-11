@@ -16,6 +16,7 @@ class AdminDrawer extends StatelessWidget {
     this.badges = const AdminMenuBadges(),
   });
 
+  static const creditJobIndex = 5;
   static const communityIndex = 13;
   static const supportIndex = 14;
   static const warmupIndex = 11;
@@ -108,6 +109,8 @@ class AdminDrawer extends StatelessWidget {
               itemBuilder: (context, index) {
                 final selected = index == selectedIndex;
                 final showBadge = switch (index) {
+                  creditJobIndex => badges.creditJob,
+                  warmupIndex => badges.warmup,
                   communityIndex => badges.community,
                   supportIndex => badges.support,
                   _ => false,
