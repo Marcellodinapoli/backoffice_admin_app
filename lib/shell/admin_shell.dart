@@ -120,7 +120,7 @@ class _AdminShellState extends State<AdminShell> {
             subtitle: AdminDrawer.titles[safeIndex],
             leading: Builder(
               builder: (context) => Badge(
-                isLabelVisible: badges.hasAny,
+                isLabelVisible: badges.warmup,
                 backgroundColor: Colors.red.shade700,
                 smallSize: 12,
                 offset: const Offset(-2, 2),
@@ -149,8 +149,6 @@ class _AdminShellState extends State<AdminShell> {
                 AdminMenuBadgeController.markCommunityVisited();
               } else if (i == AdminDrawer.supportIndex) {
                 AdminMenuBadgeController.markSupportVisited();
-              } else if (i == AdminDrawer.warmupIndex) {
-                AdminMenuBadgeController.markWarmupVisited();
               } else if (i == AdminDrawer.creditJobIndex) {
                 AdminMenuBadgeController.markCreditJobVisited();
               }

@@ -149,11 +149,6 @@ final class AdminMenuBadgeController {
         bkLocalStorageSet('lastSeen', now.toString());
         unawaited(_persistSeen(communityMs: now));
       }
-      if (_firestoreWarmupSeen <= 0) {
-        _firestoreWarmupSeen = now;
-        bkLocalStorageSet('lastSeenWarmup', now.toString());
-        unawaited(_persistSeen(warmupMs: now));
-      }
       if (_firestoreCreditJobSeen <= 0) {
         _firestoreCreditJobSeen = now;
         bkLocalStorageSet('lastSeenCreditJob', now.toString());
@@ -387,9 +382,10 @@ final class AdminMenuBadgeController {
 
   bool _hasWarmupUnread() {
     final lastSeen = _readLastSeenWarmupMs();
-    if (lastSeen <= 0) return false;
-
     final docs = _warmupPendingSnap?.docs ?? const [];
+    if (docs.isEmpty) return false;
+    if (lastSeen <= 0) return true;
+
     for (final doc in docs) {
       final millis = _docMillis(doc.data()['createdAt']);
       if (millis == null) continue;
