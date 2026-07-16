@@ -15,6 +15,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      OUTFIT_FIREBASE_API_KEY: ${{ secrets.OUTFIT_FIREBASE_API_KEY }}
+      OUTFIT_FIREBASE_APP_ID: ${{ secrets.OUTFIT_FIREBASE_APP_ID }}
+      OUTFIT_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.OUTFIT_FIREBASE_MESSAGING_SENDER_ID }}
     defaults:
       run:
         working-directory: app
@@ -51,7 +55,14 @@ jobs:
           flutter pub get
 
       - name: Build release APK (arm64)
-        run: flutter build apk --release --target-platform android-arm64
+        run: |
+          test -n "$OUTFIT_FIREBASE_API_KEY"
+          test -n "$OUTFIT_FIREBASE_APP_ID"
+          test -n "$OUTFIT_FIREBASE_MESSAGING_SENDER_ID"
+          flutter build apk --release --target-platform android-arm64 \
+            "--dart-define=OUTFIT_FIREBASE_API_KEY=$OUTFIT_FIREBASE_API_KEY" \
+            "--dart-define=OUTFIT_FIREBASE_APP_ID=$OUTFIT_FIREBASE_APP_ID" \
+            "--dart-define=OUTFIT_FIREBASE_MESSAGING_SENDER_ID=$OUTFIT_FIREBASE_MESSAGING_SENDER_ID"
 
       - name: Rename APK
         run: |

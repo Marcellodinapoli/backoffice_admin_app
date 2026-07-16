@@ -2,6 +2,9 @@
 # Secrets in GitHub (repo → Settings → Secrets → Actions):
 #   NETLIFY_AUTH_TOKEN  — Netlify → User settings → Applications
 #   NETLIFY_SITE_ID     — Netlify → Site details → API ID
+#   OUTFIT_FIREBASE_API_KEY
+#   OUTFIT_FIREBASE_APP_ID
+#   OUTFIT_FIREBASE_MESSAGING_SENDER_ID
 name: Deploy Netlify
 
 on:
@@ -16,6 +19,9 @@ jobs:
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      OUTFIT_FIREBASE_API_KEY: ${{ secrets.OUTFIT_FIREBASE_API_KEY }}
+      OUTFIT_FIREBASE_APP_ID: ${{ secrets.OUTFIT_FIREBASE_APP_ID }}
+      OUTFIT_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.OUTFIT_FIREBASE_MESSAGING_SENDER_ID }}
     defaults:
       run:
         working-directory: app
@@ -44,12 +50,18 @@ jobs:
 
       - name: Build web
         run: |
+          test -n "$OUTFIT_FIREBASE_API_KEY"
+          test -n "$OUTFIT_FIREBASE_APP_ID"
+          test -n "$OUTFIT_FIREBASE_MESSAGING_SENDER_ID"
           flutter config --enable-web --no-analytics
           flutter pub get
           cd ../creditplanet/packages/credit_calc_core
           flutter pub get
           cd "$GITHUB_WORKSPACE/app"
-          flutter build web --release --no-wasm-dry-run
+          flutter build web --release --no-wasm-dry-run \
+            "--dart-define=OUTFIT_FIREBASE_API_KEY=$OUTFIT_FIREBASE_API_KEY" \
+            "--dart-define=OUTFIT_FIREBASE_APP_ID=$OUTFIT_FIREBASE_APP_ID" \
+            "--dart-define=OUTFIT_FIREBASE_MESSAGING_SENDER_ID=$OUTFIT_FIREBASE_MESSAGING_SENDER_ID"
           test -f build/web/index.html
 
       - name: Install Netlify CLI

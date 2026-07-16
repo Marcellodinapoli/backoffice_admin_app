@@ -15,7 +15,11 @@ Repository GitHub: `Marcellodinapoli/backoffice_admin_app` (branch `main`).
 | Build command | *(vuoto — legge `netlify.toml`)* |
 | Publish directory | `build/web` |
 
-4. **Deploy site** (o push su `main` per deploy automatici).
+4. In **Environment variables** aggiungi:
+   - `OUTFIT_FIREBASE_API_KEY`
+   - `OUTFIT_FIREBASE_APP_ID`
+   - `OUTFIT_FIREBASE_MESSAGING_SENDER_ID`
+5. **Deploy site** (o push su `main` per deploy automatici).
 
 ## Opzione B — GitHub Actions
 
@@ -26,6 +30,9 @@ Se Netlify non builda da solo, usa il workflow `.github/workflows/netlify-deploy
 3. GitHub → repo `backoffice_admin_app` → **Settings** → **Secrets and variables** → **Actions**:
    - `NETLIFY_AUTH_TOKEN`
    - `NETLIFY_SITE_ID`
+   - `OUTFIT_FIREBASE_API_KEY`
+   - `OUTFIT_FIREBASE_APP_ID`
+   - `OUTFIT_FIREBASE_MESSAGING_SENDER_ID`
 4. Push su `main` → tab **Actions** per vedere il deploy.
 
 ## Aggiornare Git + Netlify (ogni modifica)

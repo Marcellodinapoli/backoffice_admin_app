@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../auth/admin_login_page.dart';
 import '../core/theme/app_colors.dart';
+import '../services/auth_service.dart';
 import 'bk_page_shell.dart';
 
 /// Impaginazione secondaria BackOffice — stessa struttura di CreditCalc.
@@ -17,7 +17,7 @@ class ImpaginazioneSecondariaBk extends StatelessWidget {
   });
 
   Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
+    await AuthService().logout();
 
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(

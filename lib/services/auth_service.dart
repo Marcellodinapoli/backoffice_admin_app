@@ -1,10 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../outfit/outfit_firebase.dart';
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Login con email e password
   Future<User?> login(String email, String password) async {
+    // Ogni tentativo parte senza una sessione Outfit precedente. Il login
+    // secondario resta fail-open esclusivamente per CreditCore.
+    await OutfitFirebase.signOut();
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
@@ -18,9 +23,11 @@ class AuthService {
 
       // Verifica claim admin
       if (tokenResult.claims?['admin'] == true) {
+        await OutfitFirebase.signIn(email.trim(), password);
         return user;
       } else {
         await _auth.signOut();
+        await OutfitFirebase.signOut();
         throw Exception("Utente non autorizzato (non admin)");
       }
     } on FirebaseAuthException catch (e) {
@@ -30,6 +37,7 @@ class AuthService {
 
   /// Logout
   Future<void> logout() async {
+    await OutfitFirebase.signOut();
     await _auth.signOut();
   }
 

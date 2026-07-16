@@ -23,6 +23,7 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
 import '../features/warmup/pages/warmup_monitoring_page.dart';
+import '../outfit/outfit_pages.dart';
 import '../services/admin_menu_badge_controller.dart';
 import '../services/admin_menu_badge_notifier.dart';
 import '../services/auth_service.dart';
@@ -38,8 +39,11 @@ class AdminShell extends StatefulWidget {
 }
 
 class _AdminShellState extends State<AdminShell> {
-  int _index = 0;
+  String _selectedId = 'creditcore.dashboard';
   final _authService = AuthService();
+  late final Map<String, Widget> _pageInstances = {
+    ..._creditPages,
+  };
 
   @override
   void initState() {
@@ -53,28 +57,47 @@ class _AdminShellState extends State<AdminShell> {
     super.dispose();
   }
 
-  static const _pages = [
-    DashboardPage(),
-    UsersPage(),
-    CompaniesPage(),
-    CoursesPage(),
-    NotificationsPage(),
-    CreditJobPage(),
-    JobConsentsPage(),
-    RegistrationConsentsPage(),
-    RoleplayPage(),
-    NormativeSearchPage(),
-    CallAnalysisPage(),
-    WarmupMonitoringPage(),
-    StatisticsPage(),
-    BkCommunityPage(),
-    BkSupportPage(),
-    CouponsPage(),
-    PlansPage(),
-    BkCostsPage(),
-    BkSecurityPage(),
-    SettingsPage(),
+  static const _creditPages = <String, Widget>{
+    'creditcore.dashboard': DashboardPage(),
+    'creditcore.users': UsersPage(),
+    'creditcore.companies': CompaniesPage(),
+    'creditcore.courses': CoursesPage(),
+    'creditcore.popup': NotificationsPage(),
+    'creditcore.credit_job': CreditJobPage(),
+    'creditcore.job_consents': JobConsentsPage(),
+    'creditcore.registration_consents': RegistrationConsentsPage(),
+    'creditcore.roleplay': RoleplayPage(),
+    'creditcore.normative': NormativeSearchPage(),
+    'creditcore.call_analysis': CallAnalysisPage(),
+    'creditcore.warmup': WarmupMonitoringPage(),
+    'creditcore.statistics': StatisticsPage(),
+    'creditcore.community': BkCommunityPage(),
+    'creditcore.support': BkSupportPage(),
+    'creditcore.coupons': CouponsPage(),
+    'creditcore.plans': PlansPage(),
+    'creditcore.costs': BkCostsPage(),
+    'creditcore.security': BkSecurityPage(),
+    'creditcore.settings': SettingsPage(),
+  };
+
+  static final _outfitPageBuilders = <String, Widget Function()>{
+    'outfit.users': () => const OutfitUsersPage(),
+    'outfit.privacy': () => const OutfitPrivacyPage(),
+    'outfit.coupons': () => const OutfitCouponsPage(),
+    'outfit.plans': () => const OutfitPlansPage(),
+    'outfit.prompts': () => const OutfitPromptsPage(),
+  };
+
+  static final _pageIds = [
+    ..._creditPages.keys,
+    ..._outfitPageBuilders.keys,
   ];
+
+  void _selectPage(String id) {
+    final builder = _outfitPageBuilders[id];
+    if (builder != null) _pageInstances.putIfAbsent(id, builder);
+    setState(() => _selectedId = id);
+  }
 
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
@@ -108,7 +131,9 @@ class _AdminShellState extends State<AdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    final safeIndex = _index.clamp(0, _pages.length - 1);
+    final safeIndex =
+        _pageIds.indexOf(_selectedId).clamp(0, _pageIds.length - 1).toInt();
+    final selectedId = _pageIds[safeIndex];
 
     return ValueListenableBuilder<AdminMenuBadges>(
       valueListenable: AdminMenuBadgeNotifier.instance.badges,
@@ -117,7 +142,8 @@ class _AdminShellState extends State<AdminShell> {
           backgroundColor: AppColors.background,
           appBar: GradientHeader(
             title: 'BackOffice Admin',
-            subtitle: AdminDrawer.titles[safeIndex],
+            subtitle:
+                '${AdminDrawer.projectFor(selectedId)} · ${AdminDrawer.titleFor(selectedId)}',
             leading: Builder(
               builder: (context) => Badge(
                 isLabelVisible: badges.warmup,
@@ -141,18 +167,18 @@ class _AdminShellState extends State<AdminShell> {
             ],
           ),
           drawer: AdminDrawer(
-            selectedIndex: safeIndex,
+            selectedId: selectedId,
             badges: badges,
-            onSelect: (i) {
-              setState(() => _index = i);
-              if (i == AdminDrawer.communityIndex) {
+            onSelect: (id) {
+              _selectPage(id);
+              if (id == AdminDrawer.communityId) {
                 AdminMenuBadgeController.markCommunityVisited();
-              } else if (i == AdminDrawer.supportIndex) {
+              } else if (id == AdminDrawer.supportId) {
                 AdminMenuBadgeController.markSupportVisited();
-              } else if (i == AdminDrawer.creditJobIndex) {
+              } else if (id == AdminDrawer.creditJobId) {
                 AdminMenuBadgeController.markCreditJobVisited();
               }
-              if (i == 1 || i == 2) {
+              if (id == 'creditcore.users' || id == 'creditcore.companies') {
                 PublicPlanLimitsConfigService.ensureLoaded().then((_) {
                   PlanLimitsRefresh.bump();
                 });
@@ -163,7 +189,10 @@ class _AdminShellState extends State<AdminShell> {
             top: false,
             child: IndexedStack(
               index: safeIndex,
-              children: _pages,
+              children: [
+                for (final id in _pageIds)
+                  _pageInstances[id] ?? const SizedBox.shrink(),
+              ],
             ),
           ),
         );

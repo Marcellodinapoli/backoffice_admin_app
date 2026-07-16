@@ -1,16 +1,29 @@
-# backoffice_admin_app
+# BackOffice Admin App
 
-A new Flutter project.
+Pannello Flutter per CreditCore e per il progetto Firebase secondario Outfit.
 
-## Getting Started
+## Configurazione Firebase Outfit
 
-This project is a starting point for a Flutter application.
+Nessuna credenziale Outfit è salvata nel repository. Web e Android richiedono:
 
-A few resources to get you started if this is your first Flutter project:
+- `OUTFIT_FIREBASE_API_KEY`
+- `OUTFIT_FIREBASE_APP_ID`
+- `OUTFIT_FIREBASE_MESSAGING_SENDER_ID`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Impostarle come secret GitHub Actions e come variabili d'ambiente Netlify. Per
+una build locale Android, impostarle nell'ambiente e usare:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+.\scripts\build_android.ps1
+```
+
+Per altre build passare gli stessi valori tramite:
+
+```text
+--dart-define=OUTFIT_FIREBASE_API_KEY=...
+--dart-define=OUTFIT_FIREBASE_APP_ID=...
+--dart-define=OUTFIT_FIREBASE_MESSAGING_SENDER_ID=...
+```
+
+Usare esclusivamente le opzioni pubbliche della Web App Firebase del progetto
+`outfit-ai-d0363`; non inserire file `.env` o valori reali nel repository.

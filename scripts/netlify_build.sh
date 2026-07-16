@@ -24,7 +24,23 @@ flutter --version
 flutter config --enable-web --no-analytics
 flutter precache --web
 flutter pub get
-flutter build web --release
+
+required_outfit_vars=(
+  OUTFIT_FIREBASE_API_KEY
+  OUTFIT_FIREBASE_APP_ID
+  OUTFIT_FIREBASE_MESSAGING_SENDER_ID
+)
+for name in "${required_outfit_vars[@]}"; do
+  if [[ -z "${!name:-}" ]]; then
+    echo "ERRORE: variabile Netlify $name mancante"
+    exit 1
+  fi
+done
+
+flutter build web --release \
+  "--dart-define=OUTFIT_FIREBASE_API_KEY=$OUTFIT_FIREBASE_API_KEY" \
+  "--dart-define=OUTFIT_FIREBASE_APP_ID=$OUTFIT_FIREBASE_APP_ID" \
+  "--dart-define=OUTFIT_FIREBASE_MESSAGING_SENDER_ID=$OUTFIT_FIREBASE_MESSAGING_SENDER_ID"
 
 if [[ ! -f "$ROOT/build/web/index.html" ]]; then
   echo "ERRORE: build/web/index.html mancante"

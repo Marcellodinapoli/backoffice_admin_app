@@ -5,67 +5,66 @@ import '../services/admin_menu_badge_notifier.dart';
 import '../widgets/admin_menu_badge_dot.dart';
 
 class AdminDrawer extends StatelessWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onSelect;
+  final String selectedId;
+  final ValueChanged<String> onSelect;
   final AdminMenuBadges badges;
 
   const AdminDrawer({
     super.key,
-    required this.selectedIndex,
+    required this.selectedId,
     required this.onSelect,
     this.badges = const AdminMenuBadges(),
   });
 
-  static const creditJobIndex = 5;
-  static const communityIndex = 13;
-  static const supportIndex = 14;
-  static const warmupIndex = 11;
+  static const creditJobId = 'creditcore.credit_job';
+  static const communityId = 'creditcore.community';
+  static const supportId = 'creditcore.support';
+  static const warmupId = 'creditcore.warmup';
 
-  static const titles = [
-    'Dashboard',
-    'Utenti',
-    'Aziende',
-    'Corsi',
-    'Popup',
-    'CreditJob',
-    'Consensi job',
-    'Consensi registrazione',
-    'Role Play',
-    'Ricerca normativa',
-    'Analisi telefonata',
-    'Warm-up',
-    'Statistiche',
-    'Community',
-    'Assistenza',
-    'Coupon',
-    'Piani',
-    'Costi',
-    'Sicurezza',
-    'Impostazioni',
+  static const creditCoreItems = [
+    ('creditcore.dashboard', 'Dashboard', Icons.dashboard_outlined),
+    ('creditcore.users', 'Utenti', Icons.people_outline),
+    ('creditcore.companies', 'Aziende', Icons.business_outlined),
+    ('creditcore.courses', 'Corsi', Icons.menu_book_outlined),
+    ('creditcore.popup', 'Popup', Icons.campaign_outlined),
+    (creditJobId, 'CreditJob', Icons.work_outline),
+    ('creditcore.job_consents', 'Consensi job', Icons.rule_outlined),
+    (
+      'creditcore.registration_consents',
+      'Consensi registrazione',
+      Icons.assignment_outlined,
+    ),
+    ('creditcore.roleplay', 'Role Play', Icons.record_voice_over_outlined),
+    ('creditcore.normative', 'Ricerca normativa', Icons.balance_outlined),
+    ('creditcore.call_analysis', 'Analisi telefonata', Icons.phone_in_talk_outlined),
+    (warmupId, 'Warm-up', Icons.psychology_outlined),
+    ('creditcore.statistics', 'Statistiche', Icons.bar_chart_outlined),
+    (communityId, 'Community', Icons.forum_outlined),
+    (supportId, 'Assistenza', Icons.support_agent_outlined),
+    ('creditcore.coupons', 'Coupon', Icons.confirmation_number_outlined),
+    ('creditcore.plans', 'Piani', Icons.layers_outlined),
+    ('creditcore.costs', 'Costi', Icons.euro_outlined),
+    ('creditcore.security', 'Sicurezza', Icons.security_outlined),
+    ('creditcore.settings', 'Impostazioni', Icons.settings_outlined),
   ];
 
-  static const _icons = [
-    Icons.dashboard_outlined,
-    Icons.people_outline,
-    Icons.business_outlined,
-    Icons.menu_book_outlined,
-    Icons.campaign_outlined,
-    Icons.work_outline,
-    Icons.rule_outlined,
-    Icons.assignment_outlined,
-    Icons.record_voice_over_outlined,
-    Icons.balance_outlined,
-    Icons.phone_in_talk_outlined,
-    Icons.psychology_outlined,
-    Icons.bar_chart_outlined,
-    Icons.forum_outlined,
-    Icons.support_agent_outlined,
-    Icons.confirmation_number_outlined,
-    Icons.layers_outlined,
-    Icons.euro_outlined,
-    Icons.security_outlined,
-    Icons.settings_outlined,
+  static const outfitItems = [
+    ('outfit.users', 'Utenti', Icons.people_outline),
+    ('outfit.privacy', 'Privacy', Icons.policy_outlined),
+    ('outfit.coupons', 'Coupon', Icons.confirmation_number_outlined),
+    ('outfit.plans', 'Piani', Icons.layers_outlined),
+    ('outfit.prompts', 'Prompt AI', Icons.auto_awesome_outlined),
   ];
+
+  static String titleFor(String id) {
+    for (final item in [...creditCoreItems, ...outfitItems]) {
+      if (item.$1 == id) return item.$2;
+    }
+    return '';
+  }
+
+  static String projectFor(String id) =>
+      id.startsWith('outfit.') ? 'Outfit' : 'CreditCore';
 
   @override
   Widget build(BuildContext context) {
@@ -104,43 +103,78 @@ class AdminDrawer extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: titles.length,
-              itemBuilder: (context, index) {
-                final selected = index == selectedIndex;
-                final showBadge = switch (index) {
-                  creditJobIndex => badges.creditJob,
-                  warmupIndex => badges.warmup,
-                  communityIndex => badges.community,
-                  supportIndex => badges.support,
-                  _ => false,
-                };
-                return ListTile(
-                  leading: Icon(
-                    _icons[index],
-                    color: selected ? AppColors.primary : AppColors.textSecondary,
-                  ),
-                  title: Text(
-                    titles[index],
-                    style: TextStyle(
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.w400,
-                      color:
-                          selected ? AppColors.primary : AppColors.textPrimary,
-                    ),
-                  ),
-                  trailing: adminMenuBadgeDot(visible: showBadge),
-                  selected: selected,
-                  onTap: () {
-                    Navigator.pop(context);
-                    onSelect(index);
-                  },
-                );
-              },
+            child: ListView(
+              children: [
+                _projectMenu(
+                  context,
+                  title: 'CreditCore',
+                  items: creditCoreItems,
+                  initiallyExpanded: selectedId.startsWith('creditcore.'),
+                ),
+                _projectMenu(
+                  context,
+                  title: 'Outfit',
+                  items: outfitItems,
+                  initiallyExpanded: selectedId.startsWith('outfit.'),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _projectMenu(
+    BuildContext context, {
+    required String title,
+    required List<(String, String, IconData)> items,
+    required bool initiallyExpanded,
+  }) {
+    final hasBadge = title == 'CreditCore' &&
+        (badges.creditJob || badges.warmup || badges.community || badges.support);
+    return ExpansionTile(
+      key: PageStorageKey('drawer.project.$title'),
+      initiallyExpanded: initiallyExpanded,
+      leading: Icon(title == 'Outfit' ? Icons.checkroom_outlined : Icons.account_balance_outlined),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          adminMenuBadgeDot(visible: hasBadge),
+          const Icon(Icons.expand_more),
+        ],
+      ),
+      children: items.map((item) {
+        final selected = item.$1 == selectedId;
+        final showBadge = switch (item.$1) {
+          creditJobId => badges.creditJob,
+          warmupId => badges.warmup,
+          communityId => badges.community,
+          supportId => badges.support,
+          _ => false,
+        };
+        return ListTile(
+          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+          leading: Icon(
+            item.$3,
+            color: selected ? AppColors.primary : AppColors.textSecondary,
+          ),
+          title: Text(
+            item.$2,
+            style: TextStyle(
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? AppColors.primary : AppColors.textPrimary,
+            ),
+          ),
+          trailing: adminMenuBadgeDot(visible: showBadge),
+          selected: selected,
+          onTap: () {
+            Navigator.pop(context);
+            onSelect(item.$1);
+          },
+        );
+      }).toList(),
     );
   }
 }
