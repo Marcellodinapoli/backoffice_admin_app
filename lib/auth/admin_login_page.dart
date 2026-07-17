@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../home/project_selection_page.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
-import '../shell/admin_shell.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -40,7 +41,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AdminShell()),
+            MaterialPageRoute(builder: (_) => const ProjectSelectionPage()),
           );
         }
       }
@@ -84,7 +85,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         if (isAdmin && mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AdminShell()),
+            MaterialPageRoute(builder: (_) => const ProjectSelectionPage()),
           );
         } else {
           setState(() {

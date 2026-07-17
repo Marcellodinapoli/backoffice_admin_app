@@ -49,4 +49,28 @@ void main() {
       'outfit.prompts',
     ]);
   });
+
+  testWidgets(
+    'drawer initially expands only the selected project',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            drawer: AdminDrawer(
+              selectedId: AdminDrawer.firstOutfitId,
+              badges: const AdminMenuBadges(),
+              onSelect: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final scaffold = tester.state<ScaffoldState>(find.byType(Scaffold));
+      scaffold.openDrawer();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dashboard'), findsNothing);
+      expect(find.text('Privacy'), findsOneWidget);
+    },
+  );
 }

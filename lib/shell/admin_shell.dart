@@ -30,16 +30,20 @@ import '../services/auth_service.dart';
 import '../shared/widgets/gradient_header.dart';
 import 'admin_drawer.dart';
 
-/// Shell principale post-login. Il login esistente naviga qui senza modifiche.
 class AdminShell extends StatefulWidget {
-  const AdminShell({super.key});
+  final String initialSelectedId;
+
+  const AdminShell({
+    super.key,
+    this.initialSelectedId = AdminDrawer.firstCreditCoreId,
+  });
 
   @override
   State<AdminShell> createState() => _AdminShellState();
 }
 
 class _AdminShellState extends State<AdminShell> {
-  String _selectedId = 'creditcore.dashboard';
+  late String _selectedId;
   final _authService = AuthService();
   late final Map<String, Widget> _pageInstances = {
     ..._creditPages,
@@ -48,6 +52,7 @@ class _AdminShellState extends State<AdminShell> {
   @override
   void initState() {
     super.initState();
+    _selectedId = widget.initialSelectedId;
     AdminMenuBadgeController.instance.start();
   }
 

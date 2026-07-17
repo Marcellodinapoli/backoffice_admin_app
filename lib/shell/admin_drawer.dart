@@ -20,9 +20,11 @@ class AdminDrawer extends StatelessWidget {
   static const communityId = 'creditcore.community';
   static const supportId = 'creditcore.support';
   static const warmupId = 'creditcore.warmup';
+  static const firstCreditCoreId = 'creditcore.dashboard';
+  static const firstOutfitId = 'outfit.users';
 
   static const creditCoreItems = [
-    ('creditcore.dashboard', 'Dashboard', Icons.dashboard_outlined),
+    (firstCreditCoreId, 'Dashboard', Icons.dashboard_outlined),
     ('creditcore.users', 'Utenti', Icons.people_outline),
     ('creditcore.companies', 'Aziende', Icons.business_outlined),
     ('creditcore.courses', 'Corsi', Icons.menu_book_outlined),
@@ -49,7 +51,7 @@ class AdminDrawer extends StatelessWidget {
   ];
 
   static const outfitItems = [
-    ('outfit.users', 'Utenti', Icons.people_outline),
+    (firstOutfitId, 'Utenti', Icons.people_outline),
     ('outfit.privacy', 'Privacy', Icons.policy_outlined),
     ('outfit.coupons', 'Coupon', Icons.confirmation_number_outlined),
     ('outfit.plans', 'Piani', Icons.layers_outlined),
