@@ -33,6 +33,7 @@ class OutfitRepository {
   Future<void> setUserStatus(String uid, String status) =>
       _db.collection('users').doc(uid).set({
         'status': status,
+        'accountStatus': status,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

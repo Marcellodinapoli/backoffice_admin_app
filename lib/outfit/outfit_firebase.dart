@@ -3,14 +3,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
+/// Configurazione Firebase Outfit (allineata a backoffice web / outfit_ai).
 abstract final class OutfitFirebase {
   static const appName = 'outfit';
   static const projectId = 'outfit-ai-d0363';
 
-  static const _apiKey = String.fromEnvironment('OUTFIT_FIREBASE_API_KEY');
-  static const _appId = String.fromEnvironment('OUTFIT_FIREBASE_APP_ID');
-  static const _messagingSenderId =
-      String.fromEnvironment('OUTFIT_FIREBASE_MESSAGING_SENDER_ID');
+  static const _apiKey = String.fromEnvironment(
+    'OUTFIT_FIREBASE_API_KEY',
+    defaultValue: 'AIzaSyDBhAkzPTnazVUNP1UcehgFfBH4EC4gUYU',
+  );
+  static const _appId = String.fromEnvironment(
+    'OUTFIT_FIREBASE_APP_ID',
+    defaultValue: '1:897976616066:web:154bfd54972166f9a1e09b',
+  );
+  static const _messagingSenderId = String.fromEnvironment(
+    'OUTFIT_FIREBASE_MESSAGING_SENDER_ID',
+    defaultValue: '897976616066',
+  );
 
   static final ValueNotifier<String?> unavailableReason = ValueNotifier(null);
   static FirebaseApp? _app;
@@ -31,7 +40,7 @@ abstract final class OutfitFirebase {
   static Future<void> initialize() async {
     if (!isConfigured) {
       unavailableReason.value =
-          'Configurazione Firebase Outfit incompleta nel sibling outfit-ai.';
+          'Configurazione Firebase Outfit incompleta.';
       return;
     }
     try {

@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/app_colors.dart';
 import '../shared/widgets/section_header.dart';
+import '../widgets/admin_subpage_scaffold.dart';
+import 'outfit_coupon_admin_service.dart';
+import 'outfit_coupon_edit_dialog.dart';
 import 'outfit_firebase.dart';
 import 'outfit_repository.dart';
 
@@ -174,8 +177,11 @@ class _OutfitUsersPageState extends State<OutfitUsersPage> {
   @override
   Widget build(BuildContext context) {
     return OutfitAvailability(
-      child: Column(
-        children: [
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           const SectionHeader(
             title: 'Utenti Outfit',
             subtitle: 'Account consumer, piano, coupon, utilizzi e consensi',
@@ -204,7 +210,11 @@ class _OutfitUsersPageState extends State<OutfitUsersPage> {
                   final data = doc.data();
                   return query.isEmpty ||
                       doc.id.toLowerCase().contains(query) ||
-                      '${data['displayName'] ?? data['name'] ?? ''}'.toLowerCase().contains(query) ||
+                      '${data['displayName'] ?? data['name'] ?? ''}'
+                          .toLowerCase()
+                          .contains(query) ||
+                      '${data['firstName'] ?? ''}'.toLowerCase().contains(query) ||
+                      '${data['lastName'] ?? ''}'.toLowerCase().contains(query) ||
                       '${data['email'] ?? ''}'.toLowerCase().contains(query);
                 }).toList()
                   ..sort((a, b) => '${a.data()['email'] ?? ''}'
@@ -216,15 +226,20 @@ class _OutfitUsersPageState extends State<OutfitUsersPage> {
                   itemBuilder: (_, index) {
                     final doc = docs[index];
                     final data = doc.data();
-                    final name = '${data['displayName'] ?? data['name'] ?? 'Utente'}';
+                    final name = _outfitUserName(data);
                     final status =
-                        '${data['status'] ?? data['accountStatus'] ?? 'active'}';
+                        '${data['accountStatus'] ?? data['status'] ?? 'active'}';
                     return Card(
                       child: ListTile(
                         leading: CircleAvatar(child: Text(name.isEmpty ? '?' : name[0].toUpperCase())),
                         title: Text(name),
-                        subtitle: Text(
-                          '${data['email'] ?? doc.id}\n${data['subscriptionPlan'] ?? 'free'} · $status',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${data['email'] ?? doc.id}'),
+                            Text('${data['subscriptionPlan'] ?? 'free'} · $status'),
+                            Text('Registrato: ${_registrationDate(data)}'),
+                          ],
                         ),
                         isThreeLine: true,
                         trailing: const Icon(Icons.chevron_right),
@@ -242,6 +257,7 @@ class _OutfitUsersPageState extends State<OutfitUsersPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -258,61 +274,23 @@ class OutfitUserDetailPage extends StatefulWidget {
 class _OutfitUserDetailPageState extends State<OutfitUserDetailPage> {
   final _repo = const OutfitRepository();
 
-  Future<void> _edit(Map<String, dynamic> data) async {
-    var plan = '${data['subscriptionPlan'] ?? 'free'}';
-    final coupon = TextEditingController(text: '${data['couponCode'] ?? ''}');
-    final save = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Piano e coupon'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: _plans.contains(plan) ? plan : 'free',
-                items: _plans
-                    .map((p) => DropdownMenuItem(value: p, child: Text(p.toUpperCase())))
-                    .toList(),
-                onChanged: (value) => setDialogState(() => plan = value ?? 'free'),
-                decoration: const InputDecoration(labelText: 'Piano'),
-              ),
-              TextField(
-                controller: coupon,
-                decoration: const InputDecoration(labelText: 'Coupon'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Salva')),
-          ],
-        ),
-      ),
-    );
-    if (save == true) {
-      await _repo.updateUser(uid: widget.uid, plan: plan, couponCode: coupon.text);
-    }
-    coupon.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Utente Outfit')),
+    return AdminSubPageScaffold(
+      title: 'Utente Outfit',
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _repo.user(widget.uid),
         builder: (_, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final data = snapshot.data!.data();
           if (data == null) return const Center(child: Text('Utente non trovato'));
-          final status = '${data['status'] ?? data['accountStatus'] ?? 'active'}';
+          final status = '${data['accountStatus'] ?? data['status'] ?? 'active'}';
           final rawLegal = data['legalConsent'];
           final legal = rawLegal is Map
               ? Map<String, dynamic>.from(rawLegal)
               : <String, dynamic>{};
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
               Card(
                 child: Padding(
@@ -321,99 +299,113 @@ class _OutfitUserDetailPageState extends State<OutfitUserDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${data['displayName'] ?? data['name'] ?? 'Utente'}',
+                        _outfitUserName(data),
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       Text('${data['email'] ?? '—'}'),
                       const Divider(),
                       _row('UID', widget.uid),
+                      _row('Registrato', _registrationDate(data)),
                       _row('Stato', status),
-                      _row('Piano', '${data['subscriptionPlan'] ?? 'free'}'),
-                      _row('Coupon', '${data['couponCode'] ?? '—'}'),
+                      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: OutfitFirebase.firestore!
+                            .collection('users')
+                            .doc(widget.uid)
+                            .collection('private')
+                            .doc('main')
+                            .snapshots(),
+                        builder: (_, privateSnap) {
+                          final private = privateSnap.data?.data() ?? const <String, dynamic>{};
+                          final plan = _outfitPlanLabel(
+                            private['subscriptionTier'] ??
+                                data['subscriptionTier'] ??
+                                data['subscriptionPlan'],
+                          );
+                          final coupon = (private['couponCode'] ?? data['couponCode'])
+                              ?.toString()
+                              .trim();
+                          final appliedAt =
+                              private['couponAppliedAt'] ?? data['couponAppliedAt'];
+                          final expiresAt = private['subscriptionExpiresAt'] ??
+                              data['subscriptionExpiresAt'];
+                          final lifetime = private['lifetimeAccess'] == true ||
+                              data['lifetimeAccess'] == true;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _row('Piano', plan),
+                              if (coupon != null && coupon.isNotEmpty) ...[
+                                _row('Coupon', coupon),
+                                _row('Inserito', _outfitFormatDate(appliedAt)),
+                                _row(
+                                  'Effetto limiti',
+                                  lifetime
+                                      ? 'Senza scadenza'
+                                      : 'Fino al ${_outfitFormatDate(expiresAt)}',
+                                ),
+                              ] else
+                                _row('Coupon', '—'),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
               ),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _edit(data),
-                    icon: const Icon(Icons.workspace_premium_outlined),
-                    label: const Text('Piano / coupon'),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _repo.setUserStatus(
-                      widget.uid,
-                      status == 'blocked' ? 'active' : 'blocked',
-                    ),
-                    icon: Icon(status == 'blocked' ? Icons.check_circle : Icons.block),
-                    label: Text(status == 'blocked' ? 'Riattiva' : 'Blocca'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _repo.resetUsage(widget.uid),
-                    icon: const Icon(Icons.restart_alt),
-                    label: const Text('Reset usage'),
-                  ),
-                ],
+              FilledButton.tonalIcon(
+                onPressed: () => _repo.setUserStatus(
+                  widget.uid,
+                  status == 'blocked' ? 'active' : 'blocked',
+                ),
+                icon: Icon(status == 'blocked' ? Icons.check_circle : Icons.block),
+                label: Text(status == 'blocked' ? 'Riattiva' : 'Blocca'),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Utilizzi mensili',
+                'Utilizzo mensile',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 stream: _repo.usage(widget.uid),
-                builder: (_, usageSnapshot) => Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: SelectableText(
-                      _safeJson(usageSnapshot.data?.data() ?? {}),
+                builder: (_, usageSnapshot) {
+                  final u = usageSnapshot.data?.data();
+                  if (u == null || u.isEmpty) {
+                    return const Card(
+                      child: ListTile(title: Text('Nessun utilizzo registrato.')),
+                    );
+                  }
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (u['monthKey'] != null) Text('Mese: ${u['monthKey']}'),
+                          Text('Analisi AI: ${u['aiAnalyze'] ?? 0}'),
+                          Text('Shopping check: ${u['shoppingCheck'] ?? 0}'),
+                          Text('Viaggi: ${u['trips'] ?? 0}'),
+                          Text(
+                            'Rigenerazioni outfit oggi: ${u['outfitRegenerationsToday'] ?? 0}',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
+              const SizedBox(height: 12),
               const Text(
-                'Profilo completo',
+                'Storico consensi',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: SelectableText(_safeJson(data)),
+                  child: Column(
+                    children: _outfitConsentTiles(legal),
+                  ),
                 ),
-              ),
-              const Text('Consensi correnti', style: TextStyle(fontWeight: FontWeight.bold)),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SelectableText(_safeJson(legal)),
-                ),
-              ),
-              const Text('Storico consensi', style: TextStyle(fontWeight: FontWeight.bold)),
-              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _repo.consentHistory(widget.uid),
-                builder: (_, consentSnapshot) {
-                  if (consentSnapshot.hasError) {
-                    return Text('Storico non disponibile: ${consentSnapshot.error}');
-                  }
-                  final docs = consentSnapshot.data?.docs ?? [];
-                  if (docs.isEmpty) return const ListTile(title: Text('Nessuna voce storica'));
-                  return Column(
-                    children: docs
-                        .map(
-                          (doc) => Card(
-                            child: ListTile(
-                              title: Text(
-                                '${doc.data()['documentType'] ?? doc.id}',
-                              ),
-                              subtitle: Text(_safeJson(doc.data())),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
               ),
             ],
           );
@@ -427,7 +419,10 @@ class _OutfitUserDetailPageState extends State<OutfitUserDetailPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 80, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+            SizedBox(
+              width: 110,
+              child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
             Expanded(child: SelectableText(value)),
           ],
         ),
@@ -439,16 +434,18 @@ class OutfitPrivacyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const OutfitAvailability(
-        child: DefaultTabController(
-          length: 2,
-          child: Column(
-            children: [
-              SectionHeader(
-                title: 'Privacy e Termini Outfit',
-                subtitle: 'Documenti legali versionati pubblicati ai consumer',
-              ),
-              TabBar(tabs: [Tab(text: 'Privacy'), Tab(text: 'Termini')]),
-              Expanded(
+        child: SafeArea(
+          top: false,
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                SectionHeader(
+                  title: 'Privacy e Termini Outfit',
+                  subtitle: 'Documenti legali versionati pubblicati ai consumer',
+                ),
+                TabBar(tabs: [Tab(text: 'Privacy'), Tab(text: 'Termini')]),
+                Expanded(
                 child: TabBarView(
                   children: [
                     _LegalEditor(id: 'moodfit_privacy', fallbackTitle: 'Privacy Policy'),
@@ -459,7 +456,8 @@ class OutfitPrivacyPage extends StatelessWidget {
             ],
           ),
         ),
-      );
+      ),
+    );
 }
 
 class _LegalEditor extends StatefulWidget {
@@ -631,145 +629,386 @@ class OutfitCouponsPage extends StatefulWidget {
 }
 
 class _OutfitCouponsPageState extends State<OutfitCouponsPage> {
-  final _repo = const OutfitRepository();
+  final _codeCtrl = TextEditingController();
+  final _labelCtrl = TextEditingController();
+  final _maxUsesCtrl = TextEditingController();
+  DateTime? _expiresAt;
+  DateTime? _benefitExpiresAt;
+  String? _restrictedPlan;
+  bool _saving = false;
+  String? _formError;
 
-  Future<void> _edit([QueryDocumentSnapshot<Map<String, dynamic>>? doc]) async {
-    final data = doc?.data() ?? {};
-    final code = TextEditingController(text: doc?.id ?? '');
-    final label = TextEditingController(text: '${data['label'] ?? ''}');
-    final maxUses = TextEditingController(text: '${data['maxUses'] ?? ''}');
-    var tier = '${data['tier'] ?? data['plan'] ?? 'plus'}';
-    if (!const ['plus', 'pro'].contains(tier)) tier = 'plus';
-    var active = (data['active'] ?? data['enabled']) == true;
-    final save = await showDialog<bool>(
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    _labelCtrl.dispose();
+    _maxUsesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickExpiry() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(doc == null ? 'Nuovo coupon' : 'Modifica coupon'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: code, enabled: doc == null, decoration: const InputDecoration(labelText: 'Codice')),
-                TextField(controller: label, decoration: const InputDecoration(labelText: 'Nota')),
-                TextField(controller: maxUses, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Utilizzi massimi')),
-                DropdownButtonFormField<String>(
-                  initialValue: tier,
-                  items: const ['plus', 'pro']
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.toUpperCase()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) =>
-                      setDialogState(() => tier = value ?? 'plus'),
-                  decoration: const InputDecoration(labelText: 'Piano'),
-                ),
-                SwitchListTile(
-                  value: active,
-                  onChanged: (value) => setDialogState(() => active = value),
-                  title: const Text('Attivo'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Salva')),
-          ],
-        ),
-      ),
+      initialDate: _expiresAt ?? now.add(const Duration(days: 365)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 3650)),
+      helpText: 'Ultimo giorno per inserire il codice (opzionale)',
     );
-    if (save == true && code.text.trim().isNotEmpty) {
-      await _repo.saveCoupon(code.text, {
-        'active': active,
-        'type': 'reset_limits',
-        'tier': tier,
-        'label': label.text.trim(),
-        'maxUses': int.tryParse(maxUses.text),
-        'usedCount': data['usedCount'] ?? 0,
-        if (doc == null) 'createdAt': FieldValue.serverTimestamp(),
-        if (doc == null) 'createdBy': _repo.adminUid,
+    if (date == null || !mounted) return;
+    setState(() => _expiresAt = date);
+  }
+
+  Future<void> _pickBenefitExpiry() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _benefitExpiresAt ?? now.add(const Duration(days: 30)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 3650)),
+      helpText: 'Scadenza effetto piano/limiti *',
+    );
+    if (date == null || !mounted) return;
+    setState(() => _benefitExpiresAt = date);
+  }
+
+  Future<void> _createCoupon() async {
+    final code = _codeCtrl.text.trim();
+    if (code.isEmpty) {
+      setState(() => _formError = 'Inserisci il codice coupon.');
+      return;
+    }
+
+    int? maxUses;
+    final maxRaw = _maxUsesCtrl.text.trim();
+    if (maxRaw.isNotEmpty) {
+      maxUses = int.tryParse(maxRaw);
+      if (maxUses == null || maxUses < 1) {
+        setState(() => _formError = 'Utilizzi massimi non valido.');
+        return;
+      }
+    }
+
+    if (_benefitExpiresAt == null) {
+      setState(() => _formError = 'Inserisci la scadenza effetto piano/limiti.');
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _formError = null;
+    });
+
+    try {
+      await OutfitCouponAdminService.createCoupon(
+        code: code,
+        label: _labelCtrl.text.trim(),
+        maxUses: maxUses,
+        expiresAt: _expiresAt,
+        benefitExpiresAt: _benefitExpiresAt!,
+        restrictedPlan: _restrictedPlan,
+      );
+      if (!mounted) return;
+      _codeCtrl.clear();
+      _labelCtrl.clear();
+      _maxUsesCtrl.clear();
+      setState(() {
+        _expiresAt = null;
+        _benefitExpiresAt = null;
+        _restrictedPlan = null;
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Coupon ${OutfitCouponAdminService.normalizeCode(code)} creato.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _formError = e
+            .toString()
+            .replaceFirst('StateError: ', '')
+            .replaceFirst('ArgumentError: ', '');
       });
     }
-    code.dispose();
-    label.dispose();
-    maxUses.dispose();
   }
+
+  String _formatDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   @override
   Widget build(BuildContext context) => OutfitAvailability(
-        child: Column(
-          children: [
-            SectionHeader(
-              title: 'Coupon Outfit',
-              subtitle: 'Schema condiviso CreditCore · destinatario users',
-              trailing: IconButton(onPressed: _edit, icon: const Icon(Icons.add_circle_outline)),
-            ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _repo.coupons(),
-                builder: (_, snapshot) {
-                  if (snapshot.hasError) return Center(child: Text('${snapshot.error}'));
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                  final docs = snapshot.data!.docs.toList()..sort((a, b) => a.id.compareTo(b.id));
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: docs.map((doc) {
-                      final data = doc.data();
-                      return Card(
-                        child: ListTile(
-                          title: Text(doc.id),
-                          subtitle: Text(
-                            '${data['tier'] ?? data['plan'] ?? '—'} · users · '
-                            '${data['usedCount'] ?? 0}/${data['maxUses'] ?? '∞'}',
-                          ),
-                          leading: Icon(
-                            (data['active'] ?? data['enabled']) == true
-                                ? Icons.check_circle
-                                : Icons.pause_circle_outline,
-                            color: (data['active'] ?? data['enabled']) == true
-                                ? Colors.green
-                                : Colors.grey,
-                          ),
-                          onTap: () => _edit(doc),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _confirmDelete(doc.id),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              const SectionHeader(
+                title: 'Coupon Outfit',
+                subtitle:
+                    'Codici per azzerare limiti e attivare il piano · solo utenti',
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              _buildCreateCard(),
+              const SizedBox(height: 24),
+              const Text(
+                'Coupon esistenti',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildList(),
+            ],
+          ),
         ),
       );
 
-  Future<void> _confirmDelete(String code) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminare il coupon?'),
-        content: Text('$code verrà eliminato definitivamente.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annulla'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Elimina'),
-          ),
-        ],
+  Widget _buildCreateCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Nuovo coupon',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _codeCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Codice coupon *',
+                hintText: 'Es. PROMO2026',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _labelCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Nota interna (opzionale)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _maxUsesCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Utilizzi massimi (vuoto = illimitati)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String?>(
+              value: _restrictedPlan,
+              decoration: const InputDecoration(
+                labelText: 'Piano vincolato',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('Qualsiasi piano')),
+                DropdownMenuItem(value: 'free', child: Text('Solo Gratis')),
+                DropdownMenuItem(value: 'plus', child: Text('Solo Plus')),
+                DropdownMenuItem(value: 'pro', child: Text('Solo Pro')),
+              ],
+              onChanged: (v) => setState(() => _restrictedPlan = v),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _pickBenefitExpiry,
+              icon: const Icon(Icons.event_available_outlined, size: 18),
+              label: Text(
+                _benefitExpiresAt == null
+                    ? 'Scadenza effetto piano/limiti *'
+                    : 'Effetto fino al: ${_formatDate(_benefitExpiresAt!)}',
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _pickExpiry,
+              icon: const Icon(Icons.event_outlined, size: 18),
+              label: Text(
+                _expiresAt == null
+                    ? 'Scadenza utilizzo codice (opzionale)'
+                    : 'Codice utilizzabile fino al: ${_formatDate(_expiresAt!)}',
+              ),
+            ),
+            if (_expiresAt != null)
+              TextButton(
+                onPressed: () => setState(() => _expiresAt = null),
+                child: const Text('Rimuovi scadenza utilizzo codice'),
+              ),
+            if (_benefitExpiresAt != null)
+              TextButton(
+                onPressed: () => setState(() => _benefitExpiresAt = null),
+                child: const Text('Rimuovi scadenza effetto'),
+              ),
+            if (_formError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _formError!,
+                style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _saving ? null : _createCoupon,
+              child: _saving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Crea coupon'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmed == true) await _repo.deleteCoupon(code);
   }
+
+  Widget _buildList() {
+    return StreamBuilder<List<OutfitCouponRecord>>(
+      stream: OutfitCouponAdminService.watchCoupons(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snap.hasError) {
+          return Text(
+            'Errore: ${snap.error}',
+            style: TextStyle(color: Colors.red.shade700),
+          );
+        }
+        final items = snap.data ?? [];
+        if (items.isEmpty) {
+          return const Text(
+            'Nessun coupon ancora creato.',
+            style: TextStyle(color: AppColors.textSecondary),
+          );
+        }
+        return Column(
+          children: [
+            for (final c in items) ...[
+              _OutfitCouponTile(
+                record: c,
+                onToggle: (enabled) => OutfitCouponAdminService.setEnabled(
+                  code: c.code,
+                  enabled: enabled,
+                ),
+                onEdit: () async {
+                  final saved = await OutfitCouponEditDialog.show(context, c);
+                  if (saved == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Coupon ${c.code} aggiornato.')),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OutfitCouponTile extends StatelessWidget {
+  final OutfitCouponRecord record;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onEdit;
+
+  const _OutfitCouponTile({
+    required this.record,
+    required this.onToggle,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final status = !record.enabled
+        ? 'Disattivato'
+        : record.expired
+            ? 'Scaduto'
+            : record.exhausted
+                ? 'Esaurito'
+                : 'Attivo';
+    final statusColor = status == 'Scaduto'
+        ? Colors.red
+        : status == 'Attivo'
+            ? Colors.green
+            : AppColors.textSecondary;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    record.code,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Switch(value: record.enabled, onChanged: onToggle),
+                IconButton(
+                  tooltip: 'Modifica',
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                ),
+              ],
+            ),
+            Text(
+              status,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (record.createdAt != null)
+              Text('Creato il: ${_formatDate(record.createdAt!)}'),
+            if (record.label != null) Text('Nota: ${record.label}'),
+            Text(
+              'Utilizzi: ${record.usedCount}'
+              '${record.maxUses != null ? ' / ${record.maxUses}' : ''}',
+            ),
+            if (record.plan != null)
+              Text('Piano: ${outfitCouponPlanLabel(record.plan)}'),
+            if (record.benefitExpiresAt != null)
+              Text(
+                'Effetto fino al: ${_formatDate(record.benefitExpiresAt!)}',
+              ),
+            if (record.expiresAt != null)
+              Text(
+                'Codice utilizzabile fino al: ${_formatDate(record.expiresAt!)}',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
 
 class OutfitPlansPage extends StatefulWidget {
@@ -866,7 +1105,9 @@ class _OutfitPlansPageState extends State<OutfitPlansPage> {
 
   @override
   Widget build(BuildContext context) => OutfitAvailability(
-        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        child: SafeArea(
+          top: false,
+          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: _repo.plans(),
           builder: (_, snapshot) {
             if (!_initialized && snapshot.hasData) {
@@ -931,9 +1172,11 @@ class _OutfitPlansPageState extends State<OutfitPlansPage> {
                   onPressed: _restoreDefaults,
                   child: const Text('Ripristina valori Outfit correnti'),
                 ),
+                const SizedBox(height: 24),
               ],
             );
           },
+        ),
         ),
       );
 
@@ -944,7 +1187,7 @@ class _OutfitPlansPageState extends State<OutfitPlansPage> {
   ) {
     if (type == _PlanFieldType.boolean) {
       return DropdownButtonFormField<String>(
-        initialValue: controller.text == 'true' ? 'true' : 'false',
+        value: controller.text == 'true' ? 'true' : 'false',
         decoration: InputDecoration(labelText: name),
         items: const [
           DropdownMenuItem(value: 'true', child: Text('true')),
@@ -955,7 +1198,7 @@ class _OutfitPlansPageState extends State<OutfitPlansPage> {
     }
     if (type == _PlanFieldType.calendarScope) {
       return DropdownButtonFormField<String>(
-        initialValue: controller.text == 'full' ? 'full' : 'today',
+        value: controller.text == 'full' ? 'full' : 'today',
         decoration: InputDecoration(labelText: name),
         items: const [
           DropdownMenuItem(value: 'today', child: Text('today')),
@@ -1011,21 +1254,24 @@ class OutfitPromptsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OutfitAvailability(
-        child: DefaultTabController(
-          length: prompts.length,
-          child: Column(
-            children: [
-              const SectionHeader(
-                title: 'Prompt AI Outfit',
-                subtitle: 'Prompt versionati, autore e ripristino predefiniti',
-              ),
-              TabBar(isScrollable: true, tabs: prompts.map((p) => Tab(text: p.$2)).toList()),
-              Expanded(
-                child: TabBarView(
-                  children: prompts.map((p) => _PromptEditor(id: p.$1, defaultPrompt: p.$3)).toList(),
+        child: SafeArea(
+          top: false,
+          child: DefaultTabController(
+            length: prompts.length,
+            child: Column(
+              children: [
+                const SectionHeader(
+                  title: 'Prompt AI Outfit',
+                  subtitle: 'Prompt versionati, autore e ripristino predefiniti',
                 ),
-              ),
-            ],
+                TabBar(isScrollable: true, tabs: prompts.map((p) => Tab(text: p.$2)).toList()),
+                Expanded(
+                  child: TabBarView(
+                    children: prompts.map((p) => _PromptEditor(id: p.$1, defaultPrompt: p.$3)).toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1104,6 +1350,73 @@ class _PromptEditorState extends State<_PromptEditor> {
       },
     );
   }
+}
+
+String _outfitPlanLabel(dynamic raw) {
+  final plan = (raw ?? 'free').toString().trim().toLowerCase();
+  if (plan == 'plus') return 'Plus';
+  if (plan == 'pro' || plan == 'enterprise') return 'Pro';
+  return 'Free';
+}
+
+String _outfitFormatDate(dynamic raw) {
+  if (raw is Timestamp) {
+    return DateFormat('dd/MM/yyyy').format(raw.toDate());
+  }
+  if (raw is String && raw.trim().isNotEmpty) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) return DateFormat('dd/MM/yyyy').format(parsed);
+  }
+  return '—';
+}
+
+List<Widget> _outfitConsentTiles(Map<String, dynamic> legal) {
+  final tiles = <Widget>[];
+  void add(String key, String description) {
+    final raw = legal[key];
+    if (raw is! Map) return;
+    final entry = Map<String, dynamic>.from(raw);
+    final version = '${entry['version'] ?? '—'}';
+    final accepted = _outfitFormatDate(entry['acceptedAt'] ?? entry['readCompletedAt']);
+    tiles.add(
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(description, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text('Versione $version · Accettato: $accepted'),
+      ),
+    );
+  }
+
+  add('privacy', 'Informativa privacy MOODFIT');
+  add('terms', 'Termini e condizioni MOODFIT');
+  if (tiles.isEmpty) {
+    return const [ListTile(title: Text('Nessun consenso registrato.'))];
+  }
+  return tiles;
+}
+
+String _outfitUserName(Map<String, dynamic> data) {
+  final direct = data['displayName'] ?? data['name'];
+  if (direct != null && direct.toString().trim().isNotEmpty) {
+    return direct.toString();
+  }
+  final parts = [data['firstName'], data['lastName']]
+      .where((e) => e != null && e.toString().trim().isNotEmpty)
+      .join(' ');
+  return parts.isEmpty ? 'Utente' : parts;
+}
+
+String _registrationDate(Map<String, dynamic> data) {
+  final raw = data['registeredAt'] ?? data['createdAt'];
+  if (raw is Timestamp) {
+    return DateFormat('dd/MM/yyyy').format(raw.toDate());
+  }
+  if (raw is String && raw.trim().isNotEmpty) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) return DateFormat('dd/MM/yyyy').format(parsed);
+    return raw;
+  }
+  return '—';
 }
 
 String _date(dynamic value) {

@@ -6,6 +6,7 @@ import '../../../models/app_user.dart';
 import '../../../services/firebase/users_service.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../../widgets/admin_subpage_scaffold.dart';
 
 class UserDetailPage extends StatelessWidget {
   final String userId;
@@ -50,13 +51,8 @@ class UserDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Dettaglio utente'),
-      ),
+    return AdminSubPageScaffold(
+      title: 'Dettaglio utente',
       body: StreamBuilder<AppUser?>(
         stream: UsersService.instance.watchUser(userId),
         builder: (context, snapshot) {
@@ -69,7 +65,7 @@ class UserDetailPage extends StatelessWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

@@ -1,5 +1,5 @@
 import '../../core/constants/firestore_collections.dart';
-import '../../core/roleplay/roleplay_config_service.dart';
+import '../../core/utils/roleplay_ai_provider.dart';
 import '../../models/roleplay_simulation.dart';
 import 'firestore_service.dart';
 
@@ -37,8 +37,10 @@ class RoleplayService {
     required List<Map<String, String>> practiceData,
     required String difficulty,
     required String personality,
+    required String aiProvider,
   }) {
     final trimmed = prompt.trim();
+    final provider = RoleplayAiProvider.readValue(aiProvider);
     return _fs.doc(FirestoreCollections.roleplay, id).update({
       'title': title,
       'category': category,
@@ -47,7 +49,7 @@ class RoleplayService {
       'prompt': trimmed,
       'gptPrompt': trimmed,
       'practiceData': practiceData,
-      'aiProvider': RoleplayConfigService.openAiProvider,
+      'aiProvider': provider,
     });
   }
 
@@ -58,8 +60,10 @@ class RoleplayService {
     required List<Map<String, String>> practiceData,
     required String difficulty,
     required String personality,
+    required String aiProvider,
   }) {
     final trimmed = prompt.trim();
+    final provider = RoleplayAiProvider.readValue(aiProvider);
     return _fs.collection(FirestoreCollections.roleplay).add({
       'title': title,
       'category': category,
@@ -68,7 +72,7 @@ class RoleplayService {
       'prompt': trimmed,
       'gptPrompt': trimmed,
       'practiceData': practiceData,
-      'aiProvider': RoleplayConfigService.openAiProvider,
+      'aiProvider': provider,
       'date': DateTime.now().toIso8601String(),
     });
   }

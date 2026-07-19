@@ -9,6 +9,8 @@ abstract final class RoleplayConfigService {
   static const difficultyField = 'difficulty';
   static const personalityField = 'personality';
   static const openAiProvider = 'gpt';
+  static const realtimeProvider = 'realtime';
+  static const defaultAiProvider = realtimeProvider;
 
   static const difficulties = [
     'facile',

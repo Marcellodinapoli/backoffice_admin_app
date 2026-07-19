@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../widgets/admin_subpage_scaffold.dart';
+
 class UserDetailsPage extends StatelessWidget {
   final String userId;
 
@@ -11,10 +13,8 @@ class UserDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dettaglio Utente"),
-      ),
+    return AdminSubPageScaffold(
+      title: 'Dettaglio Utente',
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection('users')
@@ -28,7 +28,7 @@ class UserDetailsPage extends StatelessWidget {
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                "Errore: ${snapshot.error}",
+                'Errore: ${snapshot.error}',
                 style: const TextStyle(color: Colors.red),
               ),
             );
@@ -36,21 +36,21 @@ class UserDetailsPage extends StatelessWidget {
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(
-              child: Text("Utente non trovato"),
+              child: Text('Utente non trovato'),
             );
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             child: ListView(
               children: [
-                _buildField("Email", data['email']),
-                _buildField("Tipo", data['type']),
-                _buildField("Status", data['status']),
-                _buildField("UID", data['uid']),
-                _buildField("User Code", data['userCode']),
+                _buildField('Email', data['email']),
+                _buildField('Tipo', data['type']),
+                _buildField('Status', data['status']),
+                _buildField('UID', data['uid']),
+                _buildField('User Code', data['userCode']),
               ],
             ),
           );
@@ -63,7 +63,7 @@ class UserDetailsPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
-        "$label: ${value ?? '-'}",
+        '$label: ${value ?? '-'}',
         style: const TextStyle(fontSize: 16),
       ),
     );

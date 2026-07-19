@@ -8,6 +8,7 @@ class GradientHeader extends StatelessWidget implements PreferredSizeWidget {
   final String? subtitle;
   final List<Widget>? actions;
   final Widget? leading;
+  final double? leadingWidth;
 
   const GradientHeader({
     super.key,
@@ -15,6 +16,7 @@ class GradientHeader extends StatelessWidget implements PreferredSizeWidget {
     this.subtitle,
     this.actions,
     this.leading,
+    this.leadingWidth,
   });
 
   @override
@@ -24,8 +26,12 @@ class GradientHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       leading: leading,
+      leadingWidth: leadingWidth,
       automaticallyImplyLeading: leading == null,
       actions: actions,
+      backgroundColor: Colors.transparent,
+      foregroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.white),
       flexibleSpace: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

@@ -46,6 +46,7 @@ class AdminDrawer extends StatelessWidget {
     ('creditcore.coupons', 'Coupon', Icons.confirmation_number_outlined),
     ('creditcore.plans', 'Piani', Icons.layers_outlined),
     ('creditcore.costs', 'Costi', Icons.euro_outlined),
+    ('creditcore.ai_usage', 'Consumi AI', Icons.auto_awesome_outlined),
     ('creditcore.security', 'Sicurezza', Icons.security_outlined),
     ('creditcore.settings', 'Impostazioni', Icons.settings_outlined),
   ];
@@ -54,8 +55,11 @@ class AdminDrawer extends StatelessWidget {
     (firstOutfitId, 'Utenti', Icons.people_outline),
     ('outfit.privacy', 'Privacy', Icons.policy_outlined),
     ('outfit.coupons', 'Coupon', Icons.confirmation_number_outlined),
+    ('outfit.alerts', 'Avvisi', Icons.campaign_outlined),
+    ('outfit.notifications', 'Notifiche', Icons.notifications_outlined),
     ('outfit.plans', 'Piani', Icons.layers_outlined),
     ('outfit.prompts', 'Prompt AI', Icons.auto_awesome_outlined),
+    ('outfit.ai_usage', 'Consumi AI', Icons.insights_outlined),
   ];
 
   static String titleFor(String id) {

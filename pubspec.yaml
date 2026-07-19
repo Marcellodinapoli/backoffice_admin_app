@@ -18,6 +18,8 @@ dependencies:
   firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
   firebase_messaging: ^16.1.1
+  cloud_functions: ^6.0.4
+  http: ^1.2.1
 
   credit_calc_core:
     path: ../creditplanet/packages/credit_calc_core

@@ -24,8 +24,10 @@ ThemeData buildAppTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
+      iconTheme: IconThemeData(color: Colors.white),
+      actionsIconTheme: IconThemeData(color: Colors.white),
       systemOverlayStyle: SystemUiOverlayStyle.light,
       titleTextStyle: TextStyle(
         fontSize: 20,

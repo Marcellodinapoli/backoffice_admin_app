@@ -2,12 +2,14 @@ import 'package:credit_calc_core/credit_calc_core.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/admin_login_page.dart';
+import '../home/project_selection_page.dart';
 import '../backoffice_web_pages/bk_community_page.dart';
 import '../backoffice_web_pages/bk_costs_page.dart';
 import '../backoffice_web_pages/bk_security_page.dart';
 import '../backoffice_web_pages/bk_support_page.dart';
 import '../core/subscription/plan_limits_refresh.dart';
 import '../core/theme/app_colors.dart';
+import '../features/ai_usage/pages/ai_usage_page.dart';
 import '../features/companies/pages/companies_page.dart';
 import '../features/courses/pages/courses_page.dart';
 import '../features/creditjob/pages/creditjob_page.dart';
@@ -23,6 +25,9 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../features/users/pages/users_page.dart';
 import '../features/warmup/pages/warmup_monitoring_page.dart';
+import '../outfit/outfit_ai_usage_page.dart';
+import '../outfit/outfit_alerts_page.dart';
+import '../outfit/outfit_notifications_page.dart';
 import '../outfit/outfit_pages.dart';
 import '../services/admin_menu_badge_controller.dart';
 import '../services/admin_menu_badge_notifier.dart';
@@ -45,14 +50,13 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   late String _selectedId;
   final _authService = AuthService();
-  late final Map<String, Widget> _pageInstances = {
-    ..._creditPages,
-  };
+  final Map<String, Widget> _pageInstances = {};
 
   @override
   void initState() {
     super.initState();
     _selectedId = widget.initialSelectedId;
+    _ensurePage(_selectedId);
     AdminMenuBadgeController.instance.start();
   }
 
@@ -62,45 +66,89 @@ class _AdminShellState extends State<AdminShell> {
     super.dispose();
   }
 
-  static const _creditPages = <String, Widget>{
-    'creditcore.dashboard': DashboardPage(),
-    'creditcore.users': UsersPage(),
-    'creditcore.companies': CompaniesPage(),
-    'creditcore.courses': CoursesPage(),
-    'creditcore.popup': NotificationsPage(),
-    'creditcore.credit_job': CreditJobPage(),
-    'creditcore.job_consents': JobConsentsPage(),
-    'creditcore.registration_consents': RegistrationConsentsPage(),
-    'creditcore.roleplay': RoleplayPage(),
-    'creditcore.normative': NormativeSearchPage(),
-    'creditcore.call_analysis': CallAnalysisPage(),
-    'creditcore.warmup': WarmupMonitoringPage(),
-    'creditcore.statistics': StatisticsPage(),
-    'creditcore.community': BkCommunityPage(),
-    'creditcore.support': BkSupportPage(),
-    'creditcore.coupons': CouponsPage(),
-    'creditcore.plans': PlansPage(),
-    'creditcore.costs': BkCostsPage(),
-    'creditcore.security': BkSecurityPage(),
-    'creditcore.settings': SettingsPage(),
-  };
-
-  static final _outfitPageBuilders = <String, Widget Function()>{
-    'outfit.users': () => const OutfitUsersPage(),
-    'outfit.privacy': () => const OutfitPrivacyPage(),
-    'outfit.coupons': () => const OutfitCouponsPage(),
-    'outfit.plans': () => const OutfitPlansPage(),
-    'outfit.prompts': () => const OutfitPromptsPage(),
-  };
-
-  static final _pageIds = [
-    ..._creditPages.keys,
-    ..._outfitPageBuilders.keys,
+  /// Ordine voci CreditCore (allineato al drawer).
+  static const _creditPageIds = <String>[
+    'creditcore.dashboard',
+    'creditcore.users',
+    'creditcore.companies',
+    'creditcore.courses',
+    'creditcore.popup',
+    'creditcore.credit_job',
+    'creditcore.job_consents',
+    'creditcore.registration_consents',
+    'creditcore.roleplay',
+    'creditcore.normative',
+    'creditcore.call_analysis',
+    'creditcore.warmup',
+    'creditcore.statistics',
+    'creditcore.community',
+    'creditcore.support',
+    'creditcore.coupons',
+    'creditcore.plans',
+    'creditcore.costs',
+    'creditcore.ai_usage',
+    'creditcore.security',
+    'creditcore.settings',
   ];
 
+  /// Ordine voci Outfit (allineato al drawer).
+  static const _outfitPageIds = <String>[
+    'outfit.users',
+    'outfit.privacy',
+    'outfit.coupons',
+    'outfit.alerts',
+    'outfit.notifications',
+    'outfit.plans',
+    'outfit.prompts',
+    'outfit.ai_usage',
+  ];
+
+  bool _isKnownPage(String id) =>
+      _creditPageIds.contains(id) || _outfitPageIds.contains(id);
+
+  Widget _buildPage(String id) {
+    return switch (id) {
+      'creditcore.dashboard' => const DashboardPage(),
+      'creditcore.users' => const UsersPage(),
+      'creditcore.companies' => const CompaniesPage(),
+      'creditcore.courses' => const CoursesPage(),
+      'creditcore.popup' => const NotificationsPage(),
+      'creditcore.credit_job' => const CreditJobPage(),
+      'creditcore.job_consents' => const JobConsentsPage(),
+      'creditcore.registration_consents' => const RegistrationConsentsPage(),
+      'creditcore.roleplay' => const RoleplayPage(),
+      'creditcore.normative' => const NormativeSearchPage(),
+      'creditcore.call_analysis' => const CallAnalysisPage(),
+      'creditcore.warmup' => const WarmupMonitoringPage(),
+      'creditcore.statistics' => const StatisticsPage(),
+      'creditcore.community' => const BkCommunityPage(),
+      'creditcore.support' => const BkSupportPage(),
+      'creditcore.coupons' => const CouponsPage(),
+      'creditcore.plans' => const PlansPage(),
+      'creditcore.costs' => const BkCostsPage(),
+      'creditcore.ai_usage' => const AiUsagePage(),
+      'creditcore.security' => const BkSecurityPage(),
+      'creditcore.settings' => const SettingsPage(),
+      'outfit.users' => const OutfitUsersPage(),
+      'outfit.privacy' => const OutfitPrivacyPage(),
+      'outfit.coupons' => const OutfitCouponsPage(),
+      'outfit.alerts' => const OutfitAlertsPage(),
+      'outfit.notifications' => const OutfitNotificationsPage(),
+      'outfit.plans' => const OutfitPlansPage(),
+      'outfit.prompts' => const OutfitPromptsPage(),
+      'outfit.ai_usage' => const OutfitAiUsagePage(),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  void _ensurePage(String id) {
+    if (!_isKnownPage(id)) return;
+    _pageInstances.putIfAbsent(id, () => _buildPage(id));
+  }
+
   void _selectPage(String id) {
-    final builder = _outfitPageBuilders[id];
-    if (builder != null) _pageInstances.putIfAbsent(id, builder);
+    if (!_isKnownPage(id)) return;
+    _ensurePage(id);
     setState(() => _selectedId = id);
   }
 
@@ -136,9 +184,9 @@ class _AdminShellState extends State<AdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    final safeIndex =
-        _pageIds.indexOf(_selectedId).clamp(0, _pageIds.length - 1).toInt();
-    final selectedId = _pageIds[safeIndex];
+    final selectedId =
+        _isKnownPage(_selectedId) ? _selectedId : AdminDrawer.firstCreditCoreId;
+    _ensurePage(selectedId);
 
     return ValueListenableBuilder<AdminMenuBadges>(
       valueListenable: AdminMenuBadgeNotifier.instance.badges,
@@ -149,18 +197,36 @@ class _AdminShellState extends State<AdminShell> {
             title: 'BackOffice Admin',
             subtitle:
                 '${AdminDrawer.projectFor(selectedId)} · ${AdminDrawer.titleFor(selectedId)}',
+            leadingWidth: 104,
             leading: Builder(
-              builder: (context) => Badge(
-                isLabelVisible: badges.warmup,
-                backgroundColor: Colors.red.shade700,
-                smallSize: 12,
-                offset: const Offset(-2, 2),
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  tooltip: 'Menù',
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
+              builder: (context) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Torna ai progetti',
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProjectSelectionPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  Badge(
+                    isLabelVisible: badges.warmup,
+                    backgroundColor: Colors.red.shade700,
+                    smallSize: 12,
+                    offset: const Offset(-2, 2),
+                    padding: EdgeInsets.zero,
+                    child: IconButton(
+                      tooltip: 'Menù',
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+                ],
               ),
             ),
             actions: [
@@ -190,14 +256,14 @@ class _AdminShellState extends State<AdminShell> {
               }
             },
           ),
+          // Navigazione per id (niente IndexedStack/indice): evita mismatch
+          // quando si aggiungono voci Outfit.
           body: SafeArea(
             top: false,
-            child: IndexedStack(
-              index: safeIndex,
-              children: [
-                for (final id in _pageIds)
-                  _pageInstances[id] ?? const SizedBox.shrink(),
-              ],
+            bottom: true,
+            child: KeyedSubtree(
+              key: ValueKey<String>(selectedId),
+              child: _pageInstances[selectedId] ?? const SizedBox.shrink(),
             ),
           ),
         );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/roleplay/roleplay_config_service.dart';
+import '../../../core/utils/roleplay_ai_provider.dart';
 import '../../../models/roleplay_simulation.dart';
 import '../../../services/firebase/roleplay_service.dart';
 
@@ -42,6 +43,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
   late String _category;
   late String _difficulty;
   late String _personality;
+  late String _aiProvider;
   final List<_PracticeRow> _practiceRows = [];
   bool _saving = false;
 
@@ -58,6 +60,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
       _category = sim.category == 'Recupero' ? 'Recupero' : 'Sollecito';
       _difficulty = sim.difficulty;
       _personality = sim.personality;
+      _aiProvider = RoleplayAiProvider.readValue(sim.aiProvider);
 
       if (sim.practiceData.isEmpty) {
         _practiceRows.add(_PracticeRow());
@@ -75,6 +78,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
       _category = widget.initialCategory == 'Recupero' ? 'Recupero' : 'Sollecito';
       _difficulty = RoleplayConfigService.defaultDifficulty;
       _personality = RoleplayConfigService.defaultPersonality;
+      _aiProvider = RoleplayAiProvider.defaultProvider;
       _promptCtrl.text = RoleplayConfigService.defaultSimulationPrompt;
       _practiceRows.add(_PracticeRow());
     }
@@ -142,6 +146,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
           practiceData: practiceData,
           difficulty: _difficulty,
           personality: _personality,
+          aiProvider: _aiProvider,
         );
       } else {
         await RoleplayService.instance.createSimulation(
@@ -151,6 +156,7 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
           practiceData: practiceData,
           difficulty: _difficulty,
           personality: _personality,
+          aiProvider: _aiProvider,
         );
       }
       if (!mounted) return;
@@ -213,6 +219,11 @@ class _RoleplayFormPageState extends State<RoleplayFormPage> {
                 labelText: 'Titolo',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            RoleplayAiProvider.engineDropdown(
+              value: _aiProvider,
+              onChanged: (value) => setState(() => _aiProvider = value),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(

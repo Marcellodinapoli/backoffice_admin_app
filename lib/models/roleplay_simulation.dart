@@ -23,7 +23,7 @@ class RoleplaySimulation {
     this.audioUrl,
     this.practiceData = const [],
     required this.date,
-    this.aiProvider = RoleplayAiProvider.openAi,
+    this.aiProvider = RoleplayAiProvider.defaultProvider,
     this.difficulty = RoleplayConfigService.defaultDifficulty,
     this.personality = RoleplayConfigService.defaultPersonality,
   });
