@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../auth/admin_login_page.dart';
 import '../core/theme/app_colors.dart';
+import '../services/auth_service.dart';
 import '../shared/widgets/gradient_header.dart';
 import '../shell/admin_drawer.dart';
 import '../shell/admin_shell.dart';
@@ -25,13 +27,30 @@ class ProjectSelectionPage extends StatelessWidget {
     );
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await AuthService().logout();
+    if (!context.mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const GradientHeader(
+      appBar: GradientHeader(
         title: 'BackOffice Admin',
         subtitle: 'Seleziona il progetto',
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () => _logout(context),
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,
