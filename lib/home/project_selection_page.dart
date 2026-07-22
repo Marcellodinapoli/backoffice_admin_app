@@ -71,7 +71,7 @@ class ProjectSelectionPage extends StatelessWidget {
               _ProjectCard(
                 key: const Key('project.outfit'),
                 title: 'Outfit',
-                description: 'Gestisci utenti, privacy, piani e contenuti Outfit.',
+                description: 'Gestisci utenti, assistenza diretta, privacy, piani e contenuti Outfit.',
                 icon: Icons.checkroom_outlined,
                 onTap: () => _selectProject(
                   context,

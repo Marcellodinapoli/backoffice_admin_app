@@ -40,13 +40,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selected, 'outfit.prompts');
-    expect(AdminDrawer.creditCoreItems.length, 20);
+    expect(AdminDrawer.creditCoreItems.length, 21);
     expect(AdminDrawer.outfitItems.map((item) => item.$1), [
       'outfit.users',
+      'outfit.support',
       'outfit.privacy',
       'outfit.coupons',
+      'outfit.alerts',
+      'outfit.notifications',
       'outfit.plans',
       'outfit.prompts',
+      'outfit.ai_usage',
     ]);
   });
 

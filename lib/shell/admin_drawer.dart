@@ -53,6 +53,7 @@ class AdminDrawer extends StatelessWidget {
 
   static const outfitItems = [
     (firstOutfitId, 'Utenti', Icons.people_outline),
+    ('outfit.support', 'Assistenza diretta', Icons.support_agent_outlined),
     ('outfit.privacy', 'Privacy', Icons.policy_outlined),
     ('outfit.coupons', 'Coupon', Icons.confirmation_number_outlined),
     ('outfit.alerts', 'Avvisi', Icons.campaign_outlined),

@@ -29,6 +29,7 @@ import '../outfit/outfit_ai_usage_page.dart';
 import '../outfit/outfit_alerts_page.dart';
 import '../outfit/outfit_notifications_page.dart';
 import '../outfit/outfit_pages.dart';
+import '../outfit/outfit_support_page.dart';
 import '../services/admin_menu_badge_controller.dart';
 import '../services/admin_menu_badge_notifier.dart';
 import '../services/auth_service.dart';
@@ -94,6 +95,7 @@ class _AdminShellState extends State<AdminShell> {
   /// Ordine voci Outfit (allineato al drawer).
   static const _outfitPageIds = <String>[
     'outfit.users',
+    'outfit.support',
     'outfit.privacy',
     'outfit.coupons',
     'outfit.alerts',
@@ -130,6 +132,7 @@ class _AdminShellState extends State<AdminShell> {
       'creditcore.security' => const BkSecurityPage(),
       'creditcore.settings' => const SettingsPage(),
       'outfit.users' => const OutfitUsersPage(),
+      'outfit.support' => const OutfitSupportPage(),
       'outfit.privacy' => const OutfitPrivacyPage(),
       'outfit.coupons' => const OutfitCouponsPage(),
       'outfit.alerts' => const OutfitAlertsPage(),
