@@ -63,14 +63,20 @@ class AiMonthUsage {
     'normativeSearch',
     'callAnalysis',
     'roleplayStep',
+    'roleplaySuggestion',
+    'roleplayRealtime',
     'warmupEvaluate',
+    'contestationGenerate',
   ];
 
   static const featureLabels = {
     'normativeSearch': 'Ricerca normativa',
     'callAnalysis': 'Analisi telefonata',
     'roleplayStep': 'Role play',
+    'roleplaySuggestion': 'Role play · suggerimenti',
+    'roleplayRealtime': 'Role play Realtime (voce)',
     'warmupEvaluate': 'Warm-up',
+    'contestationGenerate': 'Contestazioni',
   };
 
   factory AiMonthUsage.fromMap(Map<String, dynamic>? data) {

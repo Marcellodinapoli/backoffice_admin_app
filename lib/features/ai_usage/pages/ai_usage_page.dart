@@ -179,6 +179,7 @@ class _AiUsagePageState extends State<AiUsagePage> {
 
   Color _featureColor(String key) => switch (key) {
         'roleplayStep' => const Color(0xFF1565C0),
+        'roleplayRealtime' => const Color(0xFF283593),
         'warmupEvaluate' => const Color(0xFF6A1B9A),
         'contestationGenerate' => const Color(0xFFC62828),
         'normativeSearch' => const Color(0xFF00838F),
@@ -188,6 +189,7 @@ class _AiUsagePageState extends State<AiUsagePage> {
 
   IconData _featureIcon(String key) => switch (key) {
         'roleplayStep' => Icons.record_voice_over_outlined,
+        'roleplayRealtime' => Icons.graphic_eq_outlined,
         'warmupEvaluate' => Icons.psychology_outlined,
         'contestationGenerate' => Icons.gavel_outlined,
         'normativeSearch' => Icons.balance_outlined,
